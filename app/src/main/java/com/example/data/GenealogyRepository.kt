@@ -3,8 +3,16 @@ package com.example.data
 import kotlinx.coroutines.flow.Flow
 
 class GenealogyRepository(private val dao: GenealogyDao) {
+    val allTrees: Flow<List<GenealogyTree>> = dao.getAllTrees()
     val allPeople: Flow<List<Person>> = dao.getAllPeople()
     val allRelationships: Flow<List<Relationship>> = dao.getAllRelationships()
+
+    fun getPeopleForTree(treeId: Long): Flow<List<Person>> = dao.getPeopleForTree(treeId)
+    fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>> = dao.getRelationshipsForTree(treeId)
+
+    suspend fun insertTree(tree: GenealogyTree): Long = dao.insertTree(tree)
+    suspend fun deleteTree(tree: GenealogyTree) = dao.deleteTree(tree)
+    suspend fun getTreeById(id: Long) = dao.getTreeById(id)
 
     fun getPersonById(id: Long): Flow<Person?> = dao.getPersonById(id)
 
@@ -28,8 +36,8 @@ class GenealogyRepository(private val dao: GenealogyDao) {
     suspend fun deleteSpecificRelationship(personId1: Long, personId2: Long, type: String) =
         dao.deleteSpecificRelationship(personId1, personId2, type)
 
-    suspend fun replaceDatabase(people: List<Person>, relationships: List<Relationship>) =
-        dao.replaceDatabase(people, relationships)
+    suspend fun replaceTreeData(treeId: Long, people: List<Person>, relationships: List<Relationship>) =
+        dao.replaceTreeData(treeId, people, relationships)
 
     suspend fun mergeDatabase(people: List<Person>, relationships: List<Relationship>, updateOnConflict: Boolean) =
         dao.mergeDatabase(people, relationships, updateOnConflict)

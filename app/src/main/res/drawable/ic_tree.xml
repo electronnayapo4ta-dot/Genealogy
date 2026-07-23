@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@color/genealogy_primary"
+        android:pathData="M22,11L22,5L15,5L15,11L22,11ZM17,7L20,7L20,9L17,9L17,7ZM7,11L7,5L0,5L0,11L7,11ZM2,7L5,7L5,9L2,9L2,7ZM15,13L15,19L22,19L22,13L15,13ZM20,17L17,17L17,15L20,15L20,17ZM13,2L11,2L11,22L13,22L13,2ZM7,13L0,13L0,19L7,19L7,13ZM5,17L2,17L2,15L5,15L5,17Z"/>
+</vector>

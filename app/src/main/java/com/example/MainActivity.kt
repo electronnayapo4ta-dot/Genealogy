@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -39,21 +40,209 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.data.*
 import com.example.ui.*
 import com.example.ui.theme.MyApplicationTheme
+import kotlinx.coroutines.delay
+
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.animation.core.*
+import androidx.compose.animation.Animatable
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.delay
+import kotlin.random.Random
+
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        // Убираем системную заставку как можно быстрее
+        splashScreen.setKeepOnScreenCondition { false }
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
-                MainScreen()
+                var showBranding by remember { mutableStateOf(true) }
+
+                if (showBranding) {
+                    BrandingScreen(onFinished = { showBranding = false })
+                } else {
+                    MainScreen()
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun BrandingScreen(onFinished: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    
+    // Анимация пульсации облака
+    val cloudScale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "cloudScale"
+    )
+
+    // Анимация мерцания частиц
+    val particleAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "particleAlpha"
+    )
+
+    // Анимация роста (проявления снизу вверх)
+    val growthProgress = remember { Animatable(0f) }
+    
+    var flashCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        growthProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(2000, easing = EaseOutQuart)
+        )
+        repeat(6) {
+            flashCount++
+            delay(250)
+        }
+        delay(400)
+        onFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF0A1A3F), Color(0xFF0E3A5D), Color(0xFF052131))
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // 1. Анимированные частицы данных
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val random = java.util.Random(123)
+            repeat(40) {
+                val x = random.nextFloat() * size.width
+                val y = random.nextFloat() * size.height
+                val speed = random.nextFloat()
+                drawCircle(
+                    color = Color(0xFF3FAF7D).copy(alpha = particleAlpha * speed),
+                    radius = 3f,
+                    center = Offset(x, y)
+                )
+            }
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                // Золотое свечение
+                Box(
+                    modifier = Modifier
+                        .size(300.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFFFFD166).copy(alpha = 0.25f * growthProgress.value), 
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+
+                // Дерево с эффектом роста (mask reveal)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .aspectRatio(1f)
+                        .graphicsLayer(
+                            compositingStrategy = CompositingStrategy.Offscreen,
+                            alpha = growthProgress.value
+                        )
+                ) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.splash_genealogy),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                    
+                    // Маска для эффекта "роста" снизу вверх
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                (1f - growthProgress.value) to Color.Transparent,
+                                (1.1f - growthProgress.value) to Color.Black,
+                                1f to Color.Black
+                            ),
+                            blendMode = BlendMode.DstIn
+                        )
+                    }
+                }
+                
+                // Вспышки портретов
+                if (growthProgress.value > 0.6f) {
+                    Canvas(modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(1f)) {
+                        val positions = listOf(
+                            Offset(0.5f, 0.35f), Offset(0.38f, 0.45f), Offset(0.62f, 0.48f),
+                            Offset(0.3f, 0.6f), Offset(0.7f, 0.58f), Offset(0.52f, 0.55f)
+                        )
+                        val count = (flashCount % (positions.size + 1))
+                        for (i in 0 until count) {
+                            if (i < positions.size) {
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    radius = 8f,
+                                    center = Offset(size.width * positions[i].x, size.height * positions[i].y)
+                                )
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.3f),
+                                    radius = 20f,
+                                    center = Offset(size.width * positions[i].x, size.height * positions[i].y)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Облако синхронизации
+            Icon(
+                imageVector = Icons.Default.CloudSync,
+                contentDescription = null,
+                tint = Color(0xFF5BA9E0),
+                modifier = Modifier
+                    .size(56.dp)
+                    .scale(cloudScale)
+                    .graphicsLayer(alpha = 0.8f)
+            )
         }
     }
 }
@@ -102,10 +291,16 @@ fun MainScreen(viewModel: GenealogyViewModel = viewModel()) {
                         onClick = { currentTab = 1 }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Backup, contentDescription = "Данные") },
-                        label = { Text("Данные") },
+                        icon = { Icon(Icons.Default.AutoStories, contentDescription = "Библиотека") },
+                        label = { Text("Библиотека") },
                         selected = currentTab == 2,
                         onClick = { currentTab = 2 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Backup, contentDescription = "Данные") },
+                        label = { Text("Данные") },
+                        selected = currentTab == 3,
+                        onClick = { currentTab = 3 }
                     )
                 }
             }
@@ -162,7 +357,8 @@ fun MainScreen(viewModel: GenealogyViewModel = viewModel()) {
                             }
                         )
                         1 -> SearchTabScreen(viewModel = viewModel)
-                        2 -> BackupTabScreen(viewModel = viewModel)
+                        2 -> LibraryTabScreen(viewModel = viewModel)
+                        3 -> BackupTabScreen(viewModel = viewModel)
                     }
                 }
             }
@@ -1355,9 +1551,6 @@ fun EditPersonScreen(
 
 
 
-// ==========================================
-// TAB 2: ADVANCED FILTERS & SEARCH SCREEN
-// ==========================================
 @Composable
 fun SearchTabScreen(viewModel: GenealogyViewModel) {
     val searchText by viewModel.searchText.collectAsStateWithLifecycle()
@@ -1667,8 +1860,6 @@ fun SearchTabScreen(viewModel: GenealogyViewModel) {
     }
 }
 
-
-
 @Composable
 fun SearchCardItem(person: Person, onClick: () -> Unit) {
     Card(
@@ -1756,12 +1947,345 @@ fun SearchCardItem(person: Person, onClick: () -> Unit) {
 
 
 // ==========================================
-// TAB 3: BACKUP / IMPORT & EXPORT SCREEN
+// TAB 3: LIBRARY / PUBLIC COLLECTIONS
+// ==========================================
+@Composable
+fun LibraryTabScreen(viewModel: GenealogyViewModel) {
+    val localTrees by viewModel.allTrees.collectAsStateWithLifecycle()
+    val activeTreeId by viewModel.activeTreeId.collectAsStateWithLifecycle()
+    val publicCollections by viewModel.publicCollections.collectAsStateWithLifecycle()
+    
+    var showCreateTreeDialog by remember { mutableStateOf(false) }
+    var selectedPublicCollection by remember { mutableStateOf<PublicCollection?>(null) }
+    var showImportDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text(
+            "Моя Библиотека",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        // SECTION 1: LOCAL DATABASES
+        Text("Ваши сохранённые базы родов", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            localTrees.forEach { tree ->
+                LocalTreeCard(
+                    tree = tree,
+                    isActive = tree.id == activeTreeId,
+                    onClick = { viewModel.setActiveTree(tree.id) },
+                    onDelete = { viewModel.deleteTree(tree) }
+                )
+            }
+            
+            // Invitation to create new
+            Card(
+                onClick = { showCreateTreeDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Создать новую базу рода", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text("Начните новую генеалогическую историю с чистого листа", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            // Invitation to import as new
+            val context = LocalContext.current
+            val importFileLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.GetContent()
+            ) { uri: Uri? ->
+                uri?.let {
+                    // For simplicity, we name it "Imported Tree" + time
+                    viewModel.importDatabase(
+                        context.contentResolver, 
+                        it, 
+                        ImportMode.REPLACE, 
+                        createNewTree = true, 
+                        treeName = "Импортированный род (${System.currentTimeMillis() % 10000})"
+                    )
+                }
+            }
+
+            OutlinedButton(
+                onClick = { importFileLauncher.launch("application/json") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.UploadFile, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Импортировать базу из файла как новую")
+            }
+        }
+
+        Divider()
+
+        // SECTION 2: PUBLIC COLLECTIONS
+        Text("Общественные коллекции", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Генеалогические базы данных великих семей и исторических личностей.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        publicCollections.forEach { collection ->
+            LibraryItemCard(
+                collection = collection,
+                onDownloadClick = {
+                    selectedPublicCollection = collection
+                    showImportDialog = true
+                }
+            )
+        }
+    }
+
+    if (showCreateTreeDialog) {
+        CreateTreeDialog(
+            onDismiss = { showCreateTreeDialog = false },
+            onCreate = { name, desc ->
+                viewModel.createNewTree(name, desc)
+                showCreateTreeDialog = false
+            }
+        )
+    }
+
+    if (showImportDialog && selectedPublicCollection != null) {
+        var importMode by remember { mutableStateOf(ImportMode.MERGE) }
+
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Загрузить базу: ${selectedPublicCollection!!.title}") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Выберите режим импорта в активную базу (${localTrees.find { it.id == activeTreeId }?.name}):")
+                    
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ImportModeOption(
+                            title = "Слияние (Merge)",
+                            description = "Добавить только новых людей",
+                            selected = importMode == ImportMode.MERGE,
+                            onClick = { importMode = ImportMode.MERGE }
+                        )
+                        ImportModeOption(
+                            title = "Обновление (Update)",
+                            description = "Обновить существующих и добавить новых",
+                            selected = importMode == ImportMode.UPDATE,
+                            onClick = { importMode = ImportMode.UPDATE }
+                        )
+                        ImportModeOption(
+                            title = "Замещение (Replace)",
+                            description = "ОЧИСТИТЬ ТЕКУЩУЮ базу и загрузить эту",
+                            selected = importMode == ImportMode.REPLACE,
+                            isWarning = true,
+                            onClick = { importMode = ImportMode.REPLACE }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.importFromUrl(selectedPublicCollection!!.downloadUrl, importMode)
+                    showImportDialog = false
+                }) {
+                    Text("Загрузить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun LocalTreeCard(
+    tree: GenealogyTree,
+    isActive: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        border = if (isActive) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Icon(
+                    imageVector = if (isActive) Icons.Default.CheckCircle else Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(tree.name, fontWeight = FontWeight.Bold)
+                    if (tree.description.isNotEmpty()) {
+                        Text(tree.description, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            
+            if (!isActive) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateTreeDialog(onDismiss: () -> Unit, onCreate: (String, String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Новая база рода") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название (например, Род Ивановых)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = { desc = it },
+                    label = { Text("Описание (необязательно)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onCreate(name, desc) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Создать")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+
+@Composable
+fun LibraryItemCard(collection: PublicCollection, onDownloadClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = collection.imageUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = collection.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Автор: ${collection.author}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = collection.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Добавить в моё древо")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ImportModeOption(
+    title: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    isWarning: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onClick)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                color = if (isWarning && selected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isWarning && selected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ==========================================
+// TAB 4: BACKUP / IMPORT & EXPORT SCREEN
 // ==========================================
 @Composable
 fun BackupTabScreen(viewModel: GenealogyViewModel) {
     val context = LocalContext.current
     var selectedImportMode by remember { mutableStateOf(ImportMode.MERGE) }
+    val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
 
     // Backup Export File creator launcher
     val exportFileLauncher = rememberLauncherForActivityResult(
@@ -1806,7 +2330,7 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
                     Text("Облачное и локальное архивирование", fontWeight = FontWeight.Bold)
                 }
                 Text(
-                    text = "Вы можете экспортировать всю вашу родословную базу в один структурированный JSON файл. Этот файл можно сохранить локально на вашем смартфоне, переслать близким или залить в ваше облачное хранилище (Google Диск, iCloud, Telegram...). При переносе на новое устройство вы сможете восстановить все родственные связи и биографии.",
+                    text = "Вы можете экспортировать вашу текущую активную базу (${activeTree?.name ?: "без названия"}) в один структурированный JSON файл. При переносе на новое устройство вы сможете восстановить все родственные связи и биографии.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

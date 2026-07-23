@@ -28,6 +28,7 @@ import androidx.room.PrimaryKey
 )
 data class Relationship(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val treeId: Long = 1,
     val personId1: Long,
     val personId2: Long,
     val type: String // PARENT, PARENT_ADOPTED, SPOUSE, EX_SPOUSE, FRIEND, NANNY, WET_NURSE, OTHER

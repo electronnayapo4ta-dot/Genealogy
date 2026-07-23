@@ -9,8 +9,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -33,10 +37,23 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     private val database = GenealogyDatabase.getDatabase(application)
     private val repository = GenealogyRepository(database.genealogyDao())
 
-    val allPeople: StateFlow<List<Person>> = repository.allPeople
+    // Tree State
+    private val _activeTreeId = MutableStateFlow<Long>(1L)
+    val activeTreeId = _activeTreeId.asStateFlow()
+
+    val allTrees: StateFlow<List<GenealogyTree>> = repository.allTrees
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allRelationships: StateFlow<List<Relationship>> = repository.allRelationships
+    val activeTree: StateFlow<GenealogyTree?> = combine(allTrees, _activeTreeId) { trees, activeId ->
+        trees.find { it.id == activeId }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val allPeople: StateFlow<List<Person>> = _activeTreeId
+        .flatMapLatest { id -> repository.getPeopleForTree(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allRelationships: StateFlow<List<Relationship>> = _activeTreeId
+        .flatMapLatest { id -> repository.getRelationshipsForTree(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Selected person details state
@@ -76,7 +93,42 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage = _statusMessage.asStateFlow()
 
+    private val _publicCollections = MutableStateFlow<List<PublicCollection>>(emptyList())
+    val publicCollections = _publicCollections.asStateFlow()
+
     private val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+    init {
+        viewModelScope.launch {
+            // Ensure at least one tree exists
+            val currentTrees = allTrees.value
+            if (currentTrees.isEmpty()) {
+                repository.insertTree(GenealogyTree(name = "Моё родословное древо"))
+            }
+            // Auto-select first tree if activeTreeId is 0 or not found
+            _activeTreeId.value = repository.allTrees.first().firstOrNull()?.id ?: 1L
+        }
+
+        // Sample data for the library
+        _publicCollections.value = listOf(
+            PublicCollection(
+                id = "tolstoy",
+                title = "Род Толстых",
+                author = "Архивное сообщество",
+                description = "Генеалогическое древо Льва Николаевича Толстого, охватывающее несколько поколений его предков и потомков.",
+                imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/L.N.Tolstoy_Prokudin-Gorsky.jpg/800px-L.N.Tolstoy_Prokudin-Gorsky.jpg",
+                downloadUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/tolstoy.json"
+            ),
+            PublicCollection(
+                id = "pushkin",
+                title = "Род Пушкиных",
+                author = "Музей А.С. Пушкина",
+                description = "Полная родословная Александра Сергеевича Пушкина, включая Ганнибалов.",
+                imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg/800px-Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg",
+                downloadUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
+            )
+        )
+    }
 
     // Filtered People List based on search inputs
     val filteredPeople: StateFlow<List<Person>> = combine(
@@ -243,6 +295,32 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     // CRUD Methods
+    fun setActiveTree(id: Long) {
+        _activeTreeId.value = id
+        selectPerson(null)
+    }
+
+    fun createNewTree(name: String, description: String = "") {
+        viewModelScope.launch {
+            val newId = repository.insertTree(GenealogyTree(name = name, description = description))
+            setActiveTree(newId)
+            _statusMessage.value = "Создана новая база: $name"
+        }
+    }
+
+    fun deleteTree(tree: GenealogyTree) {
+        viewModelScope.launch {
+            repository.deleteTree(tree)
+            val remaining = repository.allTrees.first()
+            if (remaining.isNotEmpty()) {
+                setActiveTree(remaining.first().id)
+            } else {
+                repository.insertTree(GenealogyTree(name = "Моё родословное древо"))
+                setActiveTree(repository.allTrees.first().first().id)
+            }
+        }
+    }
+
     fun selectPerson(id: Long?) {
         _selectedPersonId.value = id
     }
@@ -281,12 +359,16 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun savePerson(person: Person, onComplete: (Long) -> Unit = {}) {
         viewModelScope.launch {
-            if (person.id == 0L) {
-                val newId = repository.insertPerson(person)
+            val personWithTree = if (person.treeId == 0L || person.id == 0L) {
+                person.copy(treeId = _activeTreeId.value)
+            } else person
+
+            if (personWithTree.id == 0L) {
+                val newId = repository.insertPerson(personWithTree)
                 onComplete(newId)
             } else {
-                repository.updatePerson(person)
-                onComplete(person.id)
+                repository.updatePerson(personWithTree)
+                onComplete(personWithTree.id)
             }
         }
     }
@@ -307,7 +389,12 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     fun addRelationship(personId1: Long, personId2: Long, type: String) {
         viewModelScope.launch {
             if (personId1 == personId2) return@launch
-            repository.insertRelationship(Relationship(personId1 = personId1, personId2 = personId2, type = type))
+            repository.insertRelationship(Relationship(
+                treeId = _activeTreeId.value,
+                personId1 = personId1,
+                personId2 = personId2,
+                type = type
+            ))
         }
     }
 
@@ -350,9 +437,73 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun importDatabase(contentResolver: ContentResolver, uri: Uri, mode: ImportMode) {
+    private val okHttpClient = OkHttpClient()
+
+    fun importFromUrl(url: String, mode: ImportMode, createNewTree: Boolean = false, treeName: String? = null) {
         viewModelScope.launch {
             try {
+                _statusMessage.value = "Загрузка данных..."
+                val jsonString = withContext(Dispatchers.IO) {
+                    val request = Request.Builder().url(url).build()
+                    okHttpClient.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) throw Exception("Unexpected code $response")
+                        response.body?.string()
+                    }
+                }
+
+                if (jsonString == null) {
+                    _statusMessage.value = "Ошибка: Пустой ответ от сервера"
+                    return@launch
+                }
+
+                if (createNewTree && treeName != null) {
+                    val newTreeId = repository.insertTree(GenealogyTree(name = treeName))
+                    setActiveTree(newTreeId)
+                }
+
+                processImportJson(jsonString, mode)
+            } catch (e: Exception) {
+                Log.e("GenealogyVM", "Import from URL failed", e)
+                _statusMessage.value = "Ошибка загрузки: ${e.localizedMessage}"
+            }
+        }
+    }
+
+    private suspend fun processImportJson(jsonString: String, mode: ImportMode) {
+        val data = jsonAdapter.fromJson(jsonString)
+        if (data == null) {
+            _statusMessage.value = "Не удалось распознать формат файла!"
+            return
+        }
+
+        val treeId = _activeTreeId.value
+        val peopleEntities = data.people.map { it.toEntity().copy(treeId = treeId) }
+        val relationshipEntities = data.relationships.map { it.toEntity().copy(treeId = treeId) }
+
+        when (mode) {
+            ImportMode.REPLACE -> {
+                repository.replaceTreeData(treeId, peopleEntities, relationshipEntities)
+                _statusMessage.value = "Данные древа замещены! Импортировано: ${peopleEntities.size} чел."
+            }
+            ImportMode.MERGE -> {
+                repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = false)
+                _statusMessage.value = "Данные добавлены в текущее древо!"
+            }
+            ImportMode.UPDATE -> {
+                repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = true)
+                _statusMessage.value = "Данные в древе обновлены!"
+            }
+        }
+    }
+
+    fun importDatabase(contentResolver: ContentResolver, uri: Uri, mode: ImportMode, createNewTree: Boolean = false, treeName: String? = null) {
+        viewModelScope.launch {
+            try {
+                if (createNewTree && treeName != null) {
+                    val newTreeId = repository.insertTree(GenealogyTree(name = treeName))
+                    setActiveTree(newTreeId)
+                }
+
                 val jsonString = StringBuilder()
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     BufferedReader(InputStreamReader(inputStream)).use { reader ->
@@ -363,30 +514,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                     }
                 }
-
-                val data = jsonAdapter.fromJson(jsonString.toString())
-                if (data == null) {
-                    _statusMessage.value = "Не удалось распознать формат файла!"
-                    return@launch
-                }
-
-                val peopleEntities = data.people.map { it.toEntity() }
-                val relationshipEntities = data.relationships.map { it.toEntity() }
-
-                when (mode) {
-                    ImportMode.REPLACE -> {
-                        repository.replaceDatabase(peopleEntities, relationshipEntities)
-                        _statusMessage.value = "Данные полностью замещены! Импортировано: ${peopleEntities.size} чел."
-                    }
-                    ImportMode.MERGE -> {
-                        repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = false)
-                        _statusMessage.value = "Данные объединены! Новые записи добавлены."
-                    }
-                    ImportMode.UPDATE -> {
-                        repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = true)
-                        _statusMessage.value = "Данные обновлены! Существующие записи перезаписаны."
-                    }
-                }
+                processImportJson(jsonString.toString(), mode)
             } catch (e: Exception) {
                 Log.e("GenealogyVM", "Import failed", e)
                 _statusMessage.value = "Ошибка импорта: ${e.localizedMessage}"
@@ -404,6 +532,15 @@ enum class ImportMode {
     UPDATE,   // Обновление (добавляем новые + перезаписываем существующие)
     REPLACE   // Полное замещение (очищаем БД и загружаем заново)
 }
+
+data class PublicCollection(
+    val id: String,
+    val title: String,
+    val author: String,
+    val description: String,
+    val imageUrl: String,
+    val downloadUrl: String
+)
 
 // Data holder for display purposes
 data class DirectRelation(

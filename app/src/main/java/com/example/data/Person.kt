@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "people")
 data class Person(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val treeId: Long = 1, // Reference to GenealogyTree
     val firstName: String,
     val lastName: String,
     val patronymic: String = "",

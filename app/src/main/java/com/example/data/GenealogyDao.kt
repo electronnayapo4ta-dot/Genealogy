@@ -11,6 +11,23 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface GenealogyDao {
+    // TREE OPERATIONS
+    @Query("SELECT * FROM trees ORDER BY lastModified DESC")
+    fun getAllTrees(): Flow<List<GenealogyTree>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTree(tree: GenealogyTree): Long
+
+    @Delete
+    suspend fun deleteTree(tree: GenealogyTree)
+
+    @Query("SELECT * FROM trees WHERE id = :id LIMIT 1")
+    suspend fun getTreeById(id: Long): GenealogyTree?
+
+    // PEOPLE OPERATIONS
+    @Query("SELECT * FROM people WHERE treeId = :treeId ORDER BY lastName ASC, firstName ASC")
+    fun getPeopleForTree(treeId: Long): Flow<List<Person>>
+
     @Query("SELECT * FROM people ORDER BY lastName ASC, firstName ASC")
     fun getAllPeople(): Flow<List<Person>>
 
@@ -28,6 +45,10 @@ interface GenealogyDao {
 
     @Delete
     suspend fun deletePerson(person: Person)
+
+    // RELATIONSHIP OPERATIONS
+    @Query("SELECT * FROM relationships WHERE treeId = :treeId")
+    fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>>
 
     @Query("SELECT * FROM relationships")
     fun getAllRelationships(): Flow<List<Relationship>>
@@ -47,11 +68,11 @@ interface GenealogyDao {
     @Query("DELETE FROM relationships WHERE (personId1 = :personId1 AND personId2 = :personId2 AND type = :type) OR (personId1 = :personId2 AND personId2 = :personId1 AND type = :type)")
     suspend fun deleteSpecificRelationship(personId1: Long, personId2: Long, type: String)
 
-    @Query("DELETE FROM people")
-    suspend fun clearAllPeople()
+    @Query("DELETE FROM people WHERE treeId = :treeId")
+    suspend fun clearPeopleForTree(treeId: Long)
 
-    @Query("DELETE FROM relationships")
-    suspend fun clearAllRelationships()
+    @Query("DELETE FROM relationships WHERE treeId = :treeId")
+    suspend fun clearRelationshipsForTree(treeId: Long)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPeople(people: List<Person>)
@@ -60,11 +81,11 @@ interface GenealogyDao {
     suspend fun insertRelationships(relationships: List<Relationship>)
 
     @Transaction
-    suspend fun replaceDatabase(people: List<Person>, relationships: List<Relationship>) {
-        clearAllRelationships()
-        clearAllPeople()
-        insertPeople(people)
-        insertRelationships(relationships)
+    suspend fun replaceTreeData(treeId: Long, people: List<Person>, relationships: List<Relationship>) {
+        clearRelationshipsForTree(treeId)
+        clearPeopleForTree(treeId)
+        insertPeople(people.map { it.copy(treeId = treeId) })
+        insertRelationships(relationships.map { it.copy(treeId = treeId) })
     }
 
     @Transaction
