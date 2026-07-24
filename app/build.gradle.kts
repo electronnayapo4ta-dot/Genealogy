@@ -13,11 +13,11 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.densappstudio.genealogy"
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.aistudio.genealogy.xkrpqv"
+    applicationId = "com.densappstudio.genealogy"
     minSdk = 24
     targetSdk = 36
     versionCode = 1

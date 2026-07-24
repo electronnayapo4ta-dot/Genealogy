@@ -1,0 +1,18 @@
+[
+  {
+    "id": "tolstoy",
+    "title": "Род Толстых",
+    "author": "Архивное сообщество",
+    "description": "Генеалогическое древо Льва Николаевича Толстого, охватывающее несколько поколений его предков и потомков.",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/L.N.Tolstoy_Prokudin-Gorsky.jpg/800px-L.N.Tolstoy_Prokudin-Gorsky.jpg",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/tolstoy.json"
+  },
+  {
+    "id": "pushkin",
+    "title": "Род Пушкиных",
+    "author": "Музей А.С. Пушкина",
+    "description": "Полная родословная Александра Сергеевича Пушкина, включая Ганнибалов.",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg/800px-Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
+  }
+]

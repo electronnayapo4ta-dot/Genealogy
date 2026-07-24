@@ -1,4 +1,4 @@
-package com.example.data
+package com.densappstudio.genealogy.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

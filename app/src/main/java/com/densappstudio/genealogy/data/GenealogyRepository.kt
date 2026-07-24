@@ -1,4 +1,4 @@
-package com.example.data
+package com.densappstudio.genealogy.data
 
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +11,7 @@ class GenealogyRepository(private val dao: GenealogyDao) {
     fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>> = dao.getRelationshipsForTree(treeId)
 
     suspend fun insertTree(tree: GenealogyTree): Long = dao.insertTree(tree)
+    suspend fun updateTree(tree: GenealogyTree) = dao.updateTree(tree)
     suspend fun deleteTree(tree: GenealogyTree) = dao.deleteTree(tree)
     suspend fun getTreeById(id: Long) = dao.getTreeById(id)
 

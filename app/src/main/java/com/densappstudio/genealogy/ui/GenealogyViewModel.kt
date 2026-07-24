@@ -1,4 +1,4 @@
-package com.example.ui
+package com.densappstudio.genealogy.ui
 
 import android.app.Application
 import android.content.ContentResolver
@@ -6,7 +6,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.*
+import com.densappstudio.genealogy.data.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
@@ -38,22 +38,28 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     private val repository = GenealogyRepository(database.genealogyDao())
 
     // Tree State
-    private val _activeTreeId = MutableStateFlow<Long>(1L)
+    private val _activeTreeId = MutableStateFlow<Long?>(null)
     val activeTreeId = _activeTreeId.asStateFlow()
 
     val allTrees: StateFlow<List<GenealogyTree>> = repository.allTrees
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val activeTree: StateFlow<GenealogyTree?> = combine(allTrees, _activeTreeId) { trees, activeId ->
-        trees.find { it.id == activeId }
+        trees.find { it.id == activeId } ?: trees.firstOrNull()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val allPeople: StateFlow<List<Person>> = _activeTreeId
-        .flatMapLatest { id -> repository.getPeopleForTree(id) }
+    val allPeople: StateFlow<List<Person>> = activeTree
+        .flatMapLatest { tree -> 
+            if (tree == null) flowOf(emptyList()) 
+            else repository.getPeopleForTree(tree.id) 
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allRelationships: StateFlow<List<Relationship>> = _activeTreeId
-        .flatMapLatest { id -> repository.getRelationshipsForTree(id) }
+    val allRelationships: StateFlow<List<Relationship>> = activeTree
+        .flatMapLatest { tree -> 
+            if (tree == null) flowOf(emptyList()) 
+            else repository.getRelationshipsForTree(tree.id) 
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Selected person details state
@@ -98,36 +104,47 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val currentYear = Calendar.getInstance().get(Calendar.YEAR)
 
+    // Export and Import Logic
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    private val jsonAdapter = moshi.adapter(GenealogyData::class.java)
+    private val collectionListAdapter = moshi.adapter<List<PublicCollection>>(
+        com.squareup.moshi.Types.newParameterizedType(List::class.java, PublicCollection::class.java)
+    )
+
     init {
         viewModelScope.launch {
-            // Ensure at least one tree exists
-            val currentTrees = allTrees.value
-            if (currentTrees.isEmpty()) {
-                repository.insertTree(GenealogyTree(name = "Моё родословное древо"))
+            // Auto-select first tree if available
+            repository.allTrees.first().firstOrNull()?.let {
+                _activeTreeId.value = it.id
             }
-            // Auto-select first tree if activeTreeId is 0 or not found
-            _activeTreeId.value = repository.allTrees.first().firstOrNull()?.id ?: 1L
+            // Fetch remote library index from GitHub
+            fetchPublicCollections()
         }
+    }
 
-        // Sample data for the library
-        _publicCollections.value = listOf(
-            PublicCollection(
-                id = "tolstoy",
-                title = "Род Толстых",
-                author = "Архивное сообщество",
-                description = "Генеалогическое древо Льва Николаевича Толстого, охватывающее несколько поколений его предков и потомков.",
-                imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/L.N.Tolstoy_Prokudin-Gorsky.jpg/800px-L.N.Tolstoy_Prokudin-Gorsky.jpg",
-                downloadUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/tolstoy.json"
-            ),
-            PublicCollection(
-                id = "pushkin",
-                title = "Род Пушкиных",
-                author = "Музей А.С. Пушкина",
-                description = "Полная родословная Александра Сергеевича Пушкина, включая Ганнибалов.",
-                imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg/800px-Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg",
-                downloadUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
-            )
-        )
+    private fun fetchPublicCollections() {
+        viewModelScope.launch {
+            try {
+                val indexUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/index.json"
+                val jsonString = withContext(Dispatchers.IO) {
+                    val request = Request.Builder().url(indexUrl).build()
+                    okHttpClient.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) null else response.body?.string()
+                    }
+                }
+                
+                jsonString?.let {
+                    val collections = collectionListAdapter.fromJson(it)
+                    if (collections != null) {
+                        _publicCollections.value = collections
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("GenealogyVM", "Failed to fetch collections index", e)
+            }
+        }
     }
 
     // Filtered People List based on search inputs
@@ -315,9 +332,15 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             if (remaining.isNotEmpty()) {
                 setActiveTree(remaining.first().id)
             } else {
-                repository.insertTree(GenealogyTree(name = "Моё родословное древо"))
-                setActiveTree(repository.allTrees.first().first().id)
+                _activeTreeId.value = null
             }
+        }
+    }
+
+    fun updateTreeInfo(tree: GenealogyTree) {
+        viewModelScope.launch {
+            repository.updateTree(tree)
+            _statusMessage.value = "База обновлена"
         }
     }
 
@@ -359,8 +382,14 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun savePerson(person: Person, onComplete: (Long) -> Unit = {}) {
         viewModelScope.launch {
+            val currentTreeId = _activeTreeId.value
+            if (currentTreeId == null) {
+                _statusMessage.value = "Ошибка: база не выбрана!"
+                return@launch
+            }
+
             val personWithTree = if (person.treeId == 0L || person.id == 0L) {
-                person.copy(treeId = _activeTreeId.value)
+                person.copy(treeId = currentTreeId)
             } else person
 
             if (personWithTree.id == 0L) {
@@ -389,8 +418,9 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     fun addRelationship(personId1: Long, personId2: Long, type: String) {
         viewModelScope.launch {
             if (personId1 == personId2) return@launch
+            val currentTreeId = _activeTreeId.value ?: return@launch
             repository.insertRelationship(Relationship(
-                treeId = _activeTreeId.value,
+                treeId = currentTreeId,
                 personId1 = personId1,
                 personId2 = personId2,
                 type = type
@@ -409,12 +439,6 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             repository.deleteSpecificRelationship(personId1, personId2, type)
         }
     }
-
-    // Export and Import Logic
-    private val moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
-    private val jsonAdapter = moshi.adapter(GenealogyData::class.java)
 
     fun exportDatabase(contentResolver: ContentResolver, uri: Uri) {
         viewModelScope.launch {
@@ -476,7 +500,12 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        val treeId = _activeTreeId.value
+        var treeId = activeTree.value?.id
+        if (treeId == null) {
+            treeId = repository.insertTree(GenealogyTree(name = "Импортированная база"))
+            _activeTreeId.value = treeId
+        }
+
         val peopleEntities = data.people.map { it.toEntity().copy(treeId = treeId) }
         val relationshipEntities = data.relationships.map { it.toEntity().copy(treeId = treeId) }
 

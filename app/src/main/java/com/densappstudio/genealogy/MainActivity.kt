@@ -1,5 +1,8 @@
-package com.example
+package com.densappstudio.genealogy
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -44,27 +47,23 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.data.*
-import com.example.ui.*
-import com.example.ui.theme.MyApplicationTheme
-import kotlinx.coroutines.delay
-
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import com.densappstudio.genealogy.data.*
+import com.densappstudio.genealogy.ui.*
+import com.densappstudio.genealogy.ui.theme.MyApplicationTheme
 import androidx.compose.animation.core.*
 import androidx.compose.animation.Animatable
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.util.lerp
-import kotlinx.coroutines.delay
-import kotlin.random.Random
-
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -253,7 +252,12 @@ fun BrandingScreen(onFinished: () -> Unit) {
 @Composable
 fun MainScreen(viewModel: GenealogyViewModel = viewModel()) {
     val context = LocalContext.current
-    var currentTab by remember { mutableStateOf(0) }
+    var currentTab by remember { mutableStateOf(2) } // Start with Library (index 2 in old, will be 0 in new)
+    
+    // Initial tab set to 0 (Library) in the new logic
+    LaunchedEffect(Unit) {
+        currentTab = 0
+    }
     
     // Selected Screen State
     var isEditingPerson by remember { mutableStateOf(false) }
@@ -279,20 +283,20 @@ fun MainScreen(viewModel: GenealogyViewModel = viewModel()) {
                     modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
                 ) {
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.People, contentDescription = "Древо") },
-                        label = { Text("Древо") },
+                        icon = { Icon(Icons.Default.AutoStories, contentDescription = "Библиотека") },
+                        label = { Text("Библиотека") },
                         selected = currentTab == 0,
                         onClick = { currentTab = 0 }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
-                        label = { Text("Поиск") },
+                        icon = { Icon(Icons.Default.People, contentDescription = "Древо") },
+                        label = { Text("Древо") },
                         selected = currentTab == 1,
                         onClick = { currentTab = 1 }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.AutoStories, contentDescription = "Библиотека") },
-                        label = { Text("Библиотека") },
+                        icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
+                        label = { Text("Поиск") },
                         selected = currentTab == 2,
                         onClick = { currentTab = 2 }
                     )
@@ -349,15 +353,15 @@ fun MainScreen(viewModel: GenealogyViewModel = viewModel()) {
                 // Main Tab Contents
                 else -> {
                     when (currentTab) {
-                        0 -> TreeTabScreen(
+                        0 -> LibraryTabScreen(viewModel = viewModel)
+                        1 -> TreeTabScreen(
                             viewModel = viewModel,
                             onAddClick = {
                                 editPersonData = null
                                 isEditingPerson = true
                             }
                         )
-                        1 -> SearchTabScreen(viewModel = viewModel)
-                        2 -> LibraryTabScreen(viewModel = viewModel)
+                        2 -> SearchTabScreen(viewModel = viewModel)
                         3 -> BackupTabScreen(viewModel = viewModel)
                     }
                 }
@@ -377,6 +381,7 @@ fun TreeTabScreen(
     onAddClick: () -> Unit
 ) {
     val people by viewModel.allPeople.collectAsStateWithLifecycle()
+    val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -387,7 +392,7 @@ fun TreeTabScreen(
                     .height(180.dp)
             ) {
                 Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.genealogy_banner),
+                    painter = androidx.compose.ui.res.painterResource(id = com.densappstudio.genealogy.R.drawable.genealogy_banner),
                     contentDescription = "Родословная",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -407,15 +412,17 @@ fun TreeTabScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Семейное Древо",
+                        text = activeTree?.name ?: "Семейное Древо",
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Хранение истории рода и близких связей",
+                        text = activeTree?.description.takeIf { !it.isNullOrBlank() } ?: "Хранение истории рода и близких связей",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = Color.White.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -1307,9 +1314,20 @@ fun EditPersonScreen(
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            // Persist the read permission for Local Uri if needed, or simply take the string
-            photoUriString = it.toString()
+        uri?.let { selectedUri ->
+            try {
+                context.contentResolver.openInputStream(selectedUri)?.use { inputStream ->
+                    val fileName = "person_photo_${System.currentTimeMillis()}.jpg"
+                    val file = File(context.filesDir, fileName)
+                    FileOutputStream(file).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                    photoUriString = Uri.fromFile(file).toString()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Ошибка при сохранении фото", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -1563,6 +1581,7 @@ fun SearchTabScreen(viewModel: GenealogyViewModel) {
 
     val people by viewModel.allPeople.collectAsStateWithLifecycle()
     val searchResults by viewModel.filteredPeople.collectAsStateWithLifecycle()
+    val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
 
     var showFocusSelector by remember { mutableStateOf(false) }
 
@@ -1572,12 +1591,19 @@ fun SearchTabScreen(viewModel: GenealogyViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            "Генеалогический Поиск",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Column {
+            Text(
+                "Генеалогический Поиск",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "База: ${activeTree?.name ?: "не выбрана"}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         // 1. Search Bar
         OutlinedTextField(
@@ -1954,10 +1980,28 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
     val localTrees by viewModel.allTrees.collectAsStateWithLifecycle()
     val activeTreeId by viewModel.activeTreeId.collectAsStateWithLifecycle()
     val publicCollections by viewModel.publicCollections.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     
     var showCreateTreeDialog by remember { mutableStateOf(false) }
     var selectedPublicCollection by remember { mutableStateOf<PublicCollection?>(null) }
     var showImportDialog by remember { mutableStateOf(false) }
+    
+    var treeToEdit by remember { mutableStateOf<GenealogyTree?>(null) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+
+    val collectionsSourceUrl = "https://github.com/electronnayapo4ta-dot/Genealogy/tree/main/collections"
+
+    var importUri by remember { mutableStateOf<Uri?>(null) }
+    var showImportAsNewDialog by remember { mutableStateOf(false) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            importUri = it
+            showImportAsNewDialog = true
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1973,6 +2017,39 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
             color = MaterialTheme.colorScheme.primary
         )
 
+        // NEW: Source Link Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Link, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Источник коллекций (GitHub):", style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        text = "electronnayapo4ta-dot/Genealogy",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Genealogy Collections URL", collectionsSourceUrl)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "Ссылка скопирована!", Toast.LENGTH_SHORT).show()
+                }) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Скопировать ссылку", modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+
         // SECTION 1: LOCAL DATABASES
         Text("Ваши сохранённые базы родов", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         
@@ -1982,7 +2059,11 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
                     tree = tree,
                     isActive = tree.id == activeTreeId,
                     onClick = { viewModel.setActiveTree(tree.id) },
-                    onDelete = { viewModel.deleteTree(tree) }
+                    onDelete = { viewModel.deleteTree(tree) },
+                    onRename = {
+                        treeToEdit = tree
+                        showRenameDialog = true
+                    }
                 )
             }
             
@@ -2006,25 +2087,8 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
                 }
             }
 
-            // Invitation to import as new
-            val context = LocalContext.current
-            val importFileLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.GetContent()
-            ) { uri: Uri? ->
-                uri?.let {
-                    // For simplicity, we name it "Imported Tree" + time
-                    viewModel.importDatabase(
-                        context.contentResolver, 
-                        it, 
-                        ImportMode.REPLACE, 
-                        createNewTree = true, 
-                        treeName = "Импортированный род (${System.currentTimeMillis() % 10000})"
-                    )
-                }
-            }
-
             OutlinedButton(
-                onClick = { importFileLauncher.launch("application/json") },
+                onClick = { filePickerLauncher.launch("application/json") },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.UploadFile, contentDescription = null)
@@ -2060,6 +2124,62 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
             onCreate = { name, desc ->
                 viewModel.createNewTree(name, desc)
                 showCreateTreeDialog = false
+            }
+        )
+    }
+
+    if (showRenameDialog && treeToEdit != null) {
+        RenameTreeDialog(
+            currentName = treeToEdit!!.name,
+            currentDesc = treeToEdit!!.description,
+            onDismiss = { 
+                showRenameDialog = false 
+                treeToEdit = null
+            },
+            onConfirm = { newName, newDesc ->
+                viewModel.updateTreeInfo(treeToEdit!!.copy(name = newName, description = newDesc))
+                showRenameDialog = false
+                treeToEdit = null
+            }
+        )
+    }
+
+    if (showImportAsNewDialog && importUri != null) {
+        var importName by remember { mutableStateOf("Импортированный род") }
+        
+        AlertDialog(
+            onDismissRequest = { showImportAsNewDialog = false },
+            title = { Text("Импорт новой базы") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Введите название для новой базы:")
+                    OutlinedTextField(
+                        value = importName,
+                        onValueChange = { importName = it },
+                        label = { Text("Название базы") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.importDatabase(
+                        context.contentResolver,
+                        importUri!!,
+                        ImportMode.REPLACE,
+                        createNewTree = true,
+                        treeName = importName
+                    )
+                    showImportAsNewDialog = false
+                    importUri = null
+                }) {
+                    Text("Импортировать")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportAsNewDialog = false }) {
+                    Text("Отмена")
+                }
             }
         )
     }
@@ -2119,7 +2239,8 @@ fun LocalTreeCard(
     tree: GenealogyTree,
     isActive: Boolean,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRename: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -2149,13 +2270,63 @@ fun LocalTreeCard(
                 }
             }
             
-            if (!isActive) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+            Row {
+                IconButton(onClick = onRename) {
+                    Icon(Icons.Default.Edit, contentDescription = "Переименовать", modifier = Modifier.size(20.dp))
+                }
+                if (!isActive) {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+fun RenameTreeDialog(
+    currentName: String,
+    currentDesc: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+    var desc by remember { mutableStateOf(currentDesc) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Редактирование базы") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = { desc = it },
+                    label = { Text("Описание") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name, desc) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
 }
 
 @Composable

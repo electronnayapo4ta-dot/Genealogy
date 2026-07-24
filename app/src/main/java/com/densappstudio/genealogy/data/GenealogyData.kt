@@ -1,4 +1,4 @@
-package com.example.data
+package com.densappstudio.genealogy.data
 
 import com.squareup.moshi.JsonClass
 

@@ -1,4 +1,4 @@
-package com.example.data
+package com.densappstudio.genealogy.data
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -17,6 +17,9 @@ interface GenealogyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTree(tree: GenealogyTree): Long
+
+    @Update
+    suspend fun updateTree(tree: GenealogyTree)
 
     @Delete
     suspend fun deleteTree(tree: GenealogyTree)
