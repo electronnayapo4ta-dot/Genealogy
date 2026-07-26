@@ -506,22 +506,50 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             _activeTreeId.value = treeId
         }
 
-        val peopleEntities = data.people.map { it.toEntity().copy(treeId = treeId) }
-        val relationshipEntities = data.relationships.map { it.toEntity().copy(treeId = treeId) }
+        // Remap IDs to avoid collisions between different trees/imports
+        val oldToNewIdMap = mutableMapOf<Long, Long>()
 
-        when (mode) {
-            ImportMode.REPLACE -> {
-                repository.replaceTreeData(treeId, peopleEntities, relationshipEntities)
-                _statusMessage.value = "Данные древа замещены! Импортировано: ${peopleEntities.size} чел."
+        // 1. Clear tree if REPLACE mode
+        if (mode == ImportMode.REPLACE) {
+            repository.clearPeopleForTree(treeId)
+            repository.clearRelationshipsForTree(treeId)
+        }
+
+        // 2. Insert people and build ID mapping
+        data.people.forEach { personData ->
+            val personEntity = personData.toEntity().copy(id = 0, treeId = treeId)
+            
+            // If MERGE mode, we could potentially check for duplicates by name/birth, 
+            // but for now, let's just insert everyone as new records to ensure no data is lost
+            // especially since they are in the context of the current tree.
+            
+            val newId = repository.insertPerson(personEntity)
+            oldToNewIdMap[personData.id] = newId
+        }
+
+        // 3. Insert relationships using the new ID mapping
+        data.relationships.forEach { relData ->
+            val newPersonId1 = oldToNewIdMap[relData.personId1]
+            val newPersonId2 = oldToNewIdMap[relData.personId2]
+
+            if (newPersonId1 != null && newPersonId2 != null) {
+                repository.insertRelationship(Relationship(
+                    id = 0,
+                    treeId = treeId,
+                    personId1 = newPersonId1,
+                    personId2 = newPersonId2,
+                    type = relData.type
+                ))
             }
-            ImportMode.MERGE -> {
-                repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = false)
-                _statusMessage.value = "Данные добавлены в текущее древо!"
-            }
-            ImportMode.UPDATE -> {
-                repository.mergeDatabase(peopleEntities, relationshipEntities, updateOnConflict = true)
-                _statusMessage.value = "Данные в древе обновлены!"
-            }
+        }
+
+        val totalCount = repository.getPeopleForTreeSuspend(treeId).size
+        val addedCount = data.people.size
+
+        _statusMessage.value = when (mode) {
+            ImportMode.REPLACE -> "База полностью заменена. Загружено: $addedCount чел."
+            ImportMode.MERGE -> "Объединение завершено. Добавлено: $addedCount чел. Всего в базе: $totalCount чел."
+            ImportMode.UPDATE -> "Обновление завершено. Добавлено/обновлено: $addedCount чел. Всего в базе: $totalCount чел."
         }
     }
 

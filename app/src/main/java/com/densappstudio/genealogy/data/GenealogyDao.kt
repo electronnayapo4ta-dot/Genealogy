@@ -31,6 +31,9 @@ interface GenealogyDao {
     @Query("SELECT * FROM people WHERE treeId = :treeId ORDER BY lastName ASC, firstName ASC")
     fun getPeopleForTree(treeId: Long): Flow<List<Person>>
 
+    @Query("SELECT * FROM people WHERE treeId = :treeId")
+    suspend fun getPeopleForTreeSuspend(treeId: Long): List<Person>
+
     @Query("SELECT * FROM people ORDER BY lastName ASC, firstName ASC")
     fun getAllPeople(): Flow<List<Person>>
 

@@ -8,6 +8,7 @@ class GenealogyRepository(private val dao: GenealogyDao) {
     val allRelationships: Flow<List<Relationship>> = dao.getAllRelationships()
 
     fun getPeopleForTree(treeId: Long): Flow<List<Person>> = dao.getPeopleForTree(treeId)
+    suspend fun getPeopleForTreeSuspend(treeId: Long): List<Person> = dao.getPeopleForTreeSuspend(treeId)
     fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>> = dao.getRelationshipsForTree(treeId)
 
     suspend fun insertTree(tree: GenealogyTree): Long = dao.insertTree(tree)
@@ -36,6 +37,9 @@ class GenealogyRepository(private val dao: GenealogyDao) {
 
     suspend fun deleteSpecificRelationship(personId1: Long, personId2: Long, type: String) =
         dao.deleteSpecificRelationship(personId1, personId2, type)
+
+    suspend fun clearPeopleForTree(treeId: Long) = dao.clearPeopleForTree(treeId)
+    suspend fun clearRelationshipsForTree(treeId: Long) = dao.clearRelationshipsForTree(treeId)
 
     suspend fun replaceTreeData(treeId: Long, people: List<Person>, relationships: List<Relationship>) =
         dao.replaceTreeData(treeId, people, relationships)
