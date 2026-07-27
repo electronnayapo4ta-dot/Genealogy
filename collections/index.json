@@ -14,5 +14,13 @@
     "description": "Полная родословная Александра Сергеевича Пушкина, включая Ганнибалов.",
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg/800px-Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
+  },
+  {
+    "id": "romanov",
+    "title": "Род Романовых",
+    "author": "Исторический архив",
+    "description": "Генеалогическое древо императорской династии Романовых от Петра I до Николая II.",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Nikolai_II_of_Russia.jpg/800px-Nikolai_II_of_Russia.jpg",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/romanov.json"
   }
 ]

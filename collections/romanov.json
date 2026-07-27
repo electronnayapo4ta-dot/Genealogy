@@ -1,0 +1,463 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "firstName": "Михаил",
+      "lastName": "Романов",
+      "patronymic": "Фёдорович",
+      "gender": "MALE",
+      "birthYear": 1596,
+      "deathYear": 1645,
+      "isDeceased": true,
+      "biography": "Михаил Фёдорович, первый царь из династии Романовых, избран Земским собором в 1613 году."
+    },
+    {
+      "id": 2,
+      "firstName": "Евдокия",
+      "lastName": "Романова",
+      "patronymic": "Лукьяновна",
+      "maidenName": "Стрешнева",
+      "gender": "FEMALE",
+      "birthYear": 1608,
+      "deathYear": 1645,
+      "isDeceased": true,
+      "biography": "Евдокия Стрешнева, супруга Михаила Фёдоровича, мать Алексея Михайловича."
+    },
+    {
+      "id": 3,
+      "firstName": "Алексей",
+      "lastName": "Романов",
+      "patronymic": "Михайлович",
+      "gender": "MALE",
+      "birthYear": 1629,
+      "deathYear": 1676,
+      "isDeceased": true,
+      "biography": "Алексей Михайлович Тишайший, второй царь из династии Романовых, отец Петра I."
+    },
+    {
+      "id": 4,
+      "firstName": "Мария",
+      "lastName": "Романова",
+      "patronymic": "Ильинична",
+      "maidenName": "Милославская",
+      "gender": "FEMALE",
+      "birthYear": 1625,
+      "deathYear": 1669,
+      "isDeceased": true,
+      "biography": "Мария Милославская, первая супруга Алексея Михайловича, мать царей Фёдора III и Ивана V."
+    },
+    {
+      "id": 5,
+      "firstName": "Наталья",
+      "lastName": "Романова",
+      "patronymic": "Кирилловна",
+      "maidenName": "Нарышкина",
+      "gender": "FEMALE",
+      "birthYear": 1651,
+      "deathYear": 1694,
+      "isDeceased": true,
+      "biography": "Наталья Нарышкина, вторая супруга Алексея Михайловича, мать Петра I."
+    },
+    {
+      "id": 6,
+      "firstName": "Фёдор",
+      "lastName": "Романов",
+      "patronymic": "Алексеевич",
+      "gender": "MALE",
+      "birthYear": 1661,
+      "deathYear": 1682,
+      "isDeceased": true,
+      "biography": "Фёдор III Алексеевич, царь всея Руси, сын Алексея Михайловича и Марии Милославской."
+    },
+    {
+      "id": 7,
+      "firstName": "Иван",
+      "lastName": "Романов",
+      "patronymic": "Алексеевич",
+      "gender": "MALE",
+      "birthYear": 1666,
+      "deathYear": 1696,
+      "isDeceased": true,
+      "biography": "Иван V Алексеевич, соправитель Петра I, сын Алексея Михайловича и Марии Милославской."
+    },
+    {
+      "id": 8,
+      "firstName": "Пётр",
+      "lastName": "Романов",
+      "patronymic": "Алексеевич",
+      "gender": "MALE",
+      "birthDate": "09.06.1672",
+      "birthYear": 1672,
+      "birthPlace": "Москва",
+      "deathDate": "08.02.1725",
+      "deathYear": 1725,
+      "isDeceased": true,
+      "biography": "Пётр I Великий, первый император Всероссийский, реформатор государства и армии."
+    },
+    {
+      "id": 9,
+      "firstName": "Екатерина",
+      "lastName": "Романова",
+      "patronymic": "Алексеевна",
+      "maidenName": "Скавронская",
+      "gender": "FEMALE",
+      "birthYear": 1684,
+      "deathYear": 1727,
+      "isDeceased": true,
+      "biography": "Екатерина I, супруга Петра I, первая женщина-императрица на российском престоле."
+    },
+    {
+      "id": 10,
+      "firstName": "Анна",
+      "lastName": "Романова",
+      "patronymic": "Петровна",
+      "gender": "FEMALE",
+      "birthYear": 1708,
+      "deathYear": 1728,
+      "isDeceased": true,
+      "biography": "Анна Петровна, дочь Петра I и Екатерины I, мать будущего императора Петра III."
+    },
+    {
+      "id": 11,
+      "firstName": "Елизавета",
+      "lastName": "Романова",
+      "patronymic": "Петровна",
+      "gender": "FEMALE",
+      "birthYear": 1709,
+      "deathYear": 1762,
+      "isDeceased": true,
+      "biography": "Елизавета Петровна, императрица Всероссийская, дочь Петра I."
+    },
+    {
+      "id": 12,
+      "firstName": "Пётр",
+      "lastName": "Романов",
+      "patronymic": "Фёдорович",
+      "gender": "MALE",
+      "birthYear": 1728,
+      "deathYear": 1762,
+      "isDeceased": true,
+      "biography": "Пётр III, император Всероссийский, внук Петра I."
+    },
+    {
+      "id": 13,
+      "firstName": "Екатерина",
+      "lastName": "Романова",
+      "patronymic": "Алексеевна",
+      "maidenName": "фон Анхальт-Цербст",
+      "gender": "FEMALE",
+      "birthYear": 1729,
+      "deathYear": 1796,
+      "isDeceased": true,
+      "biography": "Екатерина II Великая, императрица Всероссийская."
+    },
+    {
+      "id": 14,
+      "firstName": "Павел",
+      "lastName": "Романов",
+      "patronymic": "Петрович",
+      "gender": "MALE",
+      "birthYear": 1754,
+      "deathYear": 1801,
+      "isDeceased": true,
+      "biography": "Павел I, император Всероссийский."
+    },
+    {
+      "id": 15,
+      "firstName": "Александр",
+      "lastName": "Романов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1777,
+      "deathYear": 1825,
+      "isDeceased": true,
+      "biography": "Александр I, император Всероссийский."
+    },
+    {
+      "id": 16,
+      "firstName": "Николай",
+      "lastName": "Романов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1796,
+      "deathYear": 1855,
+      "isDeceased": true,
+      "biography": "Николай I, император Всероссийский."
+    },
+    {
+      "id": 17,
+      "firstName": "Александр",
+      "lastName": "Романов",
+      "patronymic": "Николаевич",
+      "gender": "MALE",
+      "birthYear": 1818,
+      "deathYear": 1881,
+      "isDeceased": true,
+      "biography": "Александр II, император Всероссийский."
+    },
+    {
+      "id": 18,
+      "firstName": "Александр",
+      "lastName": "Романов",
+      "patronymic": "Александрович",
+      "gender": "MALE",
+      "birthYear": 1845,
+      "deathYear": 1894,
+      "isDeceased": true,
+      "biography": "Александр III, император Всероссийский."
+    },
+    {
+      "id": 19,
+      "firstName": "Николай",
+      "lastName": "Романов",
+      "patronymic": "Александрович",
+      "gender": "MALE",
+      "birthYear": 1868,
+      "deathYear": 1918,
+      "isDeceased": true,
+      "biography": "Николай II, последний император Всероссийский."
+    },
+{
+  "id": 20,
+  "firstName": "Константин",
+  "lastName": "Романов",
+  "patronymic": "Николаевич",
+  "gender": "MALE",
+  "birthYear": 1827,
+  "deathYear": 1892,
+  "isDeceased": true,
+  "biography": "Великий князь Константин Николаевич, сын Николая I, генерал-адмирал."
+},
+{
+  "id": 21,
+  "firstName": "Александра",
+  "lastName": "Романова",
+  "patronymic": "Иосифовна",
+  "maidenName": "Саксен-Альтенбургская",
+  "gender": "FEMALE",
+  "birthYear": 1830,
+  "deathYear": 1911,
+  "isDeceased": true,
+  "biography": "Великая княгиня Александра Иосифовна, супруга Константина Николаевича."
+},
+{
+  "id": 22,
+  "firstName": "Николай",
+  "lastName": "Романов",
+  "patronymic": "Константинович",
+  "gender": "MALE",
+  "birthYear": 1850,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Великий князь Николай Константинович, сын Константина Николаевича."
+},
+{
+  "id": 23,
+  "firstName": "Константин",
+  "lastName": "Романов",
+  "patronymic": "Константинович",
+  "gender": "MALE",
+  "birthYear": 1858,
+  "deathYear": 1915,
+  "isDeceased": true,
+  "biography": "Великий князь Константин Константинович (К.Р.), поэт, драматург."
+},
+{
+  "id": 24,
+  "firstName": "Владимир",
+  "lastName": "Романов",
+  "patronymic": "Александрович",
+  "gender": "MALE",
+  "birthYear": 1847,
+  "deathYear": 1909,
+  "isDeceased": true,
+  "biography": "Великий князь Владимир Александрович, сын Александра II."
+},
+{
+  "id": 25,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Павловна",
+  "maidenName": "Мекленбург-Шверинская",
+  "gender": "FEMALE",
+  "birthYear": 1854,
+  "deathYear": 1920,
+  "isDeceased": true,
+  "biography": "Великая княгиня Мария Павловна, супруга Владимира Александровича."
+},
+{
+  "id": 26,
+  "firstName": "Кирилл",
+  "lastName": "Романов",
+  "patronymic": "Владимирович",
+  "gender": "MALE",
+  "birthYear": 1876,
+  "deathYear": 1938,
+  "isDeceased": true,
+  "biography": "Великий князь Кирилл Владимирович, глава Российского императорского дома в эмиграции."
+},
+{
+  "id": 27,
+  "firstName": "Борис",
+  "lastName": "Романов",
+  "patronymic": "Владимирович",
+  "gender": "MALE",
+  "birthYear": 1877,
+  "deathYear": 1943,
+  "isDeceased": true,
+  "biography": "Великий князь Борис Владимирович."
+},
+{
+  "id": 28,
+  "firstName": "Андрей",
+  "lastName": "Романов",
+  "patronymic": "Владимирович",
+  "gender": "MALE",
+  "birthYear": 1879,
+  "deathYear": 1956,
+  "isDeceased": true,
+  "biography": "Великий князь Андрей Владимирович."
+},
+{
+  "id": 29,
+  "firstName": "Михаил",
+  "lastName": "Романов",
+  "patronymic": "Николаевич",
+  "gender": "MALE",
+  "birthYear": 1832,
+  "deathYear": 1909,
+  "isDeceased": true,
+  "biography": "Великий князь Михаил Николаевич, сын Николая I, генерал-фельдмаршал."
+},
+{
+  "id": 30,
+  "firstName": "Ольга",
+  "lastName": "Романова",
+  "patronymic": "Фёдоровна",
+  "maidenName": "Баденская",
+  "gender": "FEMALE",
+  "birthYear": 1839,
+  "deathYear": 1891,
+  "isDeceased": true,
+  "biography": "Великая княгиня Ольга Фёдоровна, супруга Михаила Николаевича."
+},
+{
+  "id": 31,
+  "firstName": "Николай",
+  "lastName": "Романов",
+  "patronymic": "Михайлович",
+  "gender": "MALE",
+  "birthYear": 1859,
+  "deathYear": 1919,
+  "isDeceased": true,
+  "biography": "Великий князь Николай Михайлович, историк."
+},
+{
+  "id": 32,
+  "firstName": "Георгий",
+  "lastName": "Романов",
+  "patronymic": "Михайлович",
+  "gender": "MALE",
+  "birthYear": 1863,
+  "deathYear": 1919,
+  "isDeceased": true,
+  "biography": "Великий князь Георгий Михайлович."
+},
+{
+  "id": 33,
+  "firstName": "Александр",
+  "lastName": "Романов",
+  "patronymic": "Михайлович",
+  "gender": "MALE",
+  "birthYear": 1866,
+  "deathYear": 1933,
+  "isDeceased": true,
+  "biography": "Великий князь Александр Михайлович, муж Ксении Александровны."
+}
+  ],
+  "relationships": [
+    { "id": 1, "personId1": 1, "personId2": 2, "type": "SPOUSE" },
+    { "id": 2, "personId1": 1, "personId2": 3, "type": "PARENT" },
+    { "id": 3, "personId1": 2, "personId2": 3, "type": "PARENT" },
+
+    { "id": 4, "personId1": 3, "personId2": 4, "type": "SPOUSE" },
+    { "id": 5, "personId1": 3, "personId2": 5, "type": "SPOUSE" },
+
+    { "id": 6, "personId1": 3, "personId2": 6, "type": "PARENT" },
+    { "id": 7, "personId1": 4, "personId2": 6, "type": "PARENT" },
+
+    { "id": 8, "personId1": 3, "personId2": 7, "type": "PARENT" },
+    { "id": 9, "personId1": 4, "personId2": 7, "type": "PARENT" },
+
+    { "id": 10, "personId1": 3, "personId2": 8, "type": "PARENT" },
+    { "id": 11, "personId1": 5, "personId2": 8, "type": "PARENT" },
+
+    { "id": 12, "personId1": 8, "personId2": 9, "type": "SPOUSE" },
+
+    { "id": 13, "personId1": 8, "personId2": 10, "type": "PARENT" },
+    { "id": 14, "personId1": 9, "personId2": 10, "type": "PARENT" },
+
+    { "id": 15, "personId1": 8, "personId2": 11, "type": "PARENT" },
+    { "id": 16, "personId1": 9, "personId2": 11, "type": "PARENT" },
+
+    { "id": 17, "personId1": 10, "personId2": 12, "type": "PARENT" },
+
+    { "id": 18, "personId1": 12, "personId2": 13, "type": "SPOUSE" },
+
+    { "id": 19, "personId1": 12, "personId2": 14, "type": "PARENT" },
+    { "id": 20, "personId1": 13, "personId2": 14, "type": "PARENT" },
+
+    { "id": 21, "personId1": 14, "personId2": 15, "type": "PARENT" },
+    { "id": 22, "personId1": 14, "personId2": 16, "type": "PARENT" },
+
+    { "id": 23, "personId1": 16, "personId2": 17, "type": "PARENT" },
+
+    { "id": 24, "personId1": 17, "personId2": 18, "type": "PARENT" },
+
+    { "id": 25, "personId1": 18, "personId2": 19, "type": "PARENT" },
+
+    { "id": 26, "personId1": 16, "personId2": 20, "type": "PARENT" },
+
+    { "id": 27, "personId1": 16, "personId2": 21, "type": "PARENT" },
+
+    { "id": 28, "personId1": 20, "personId2": 22, "type": "PARENT" },
+
+    { "id": 29, "personId1": 21, "personId2": 22, "type": "PARENT" },
+
+    { "id": 30, "personId1": 20, "personId2": 23, "type": "PARENT" },
+
+    { "id": 31, "personId1": 21, "personId2": 23, "type": "PARENT" },
+
+    { "id": 32, "personId1": 17, "personId2": 24, "type": "PARENT" },
+
+    { "id": 33, "personId1": 17, "personId2": 25, "type": "PARENT" },
+
+    { "id": 34, "personId1": 24, "personId2": 26, "type": "PARENT" },
+
+    { "id": 35, "personId1": 25, "personId2": 26, "type": "PARENT" },
+
+    { "id": 36, "personId1": 24, "personId2": 27, "type": "PARENT" },
+
+    { "id": 37, "personId1": 25, "personId2": 27, "type": "PARENT" },
+
+    { "id": 38, "personId1": 24, "personId2": 28, "type": "PARENT" },
+
+    { "id": 39, "personId1": 25, "personId2": 28, "type": "PARENT" },
+
+    { "id": 40, "personId1": 16, "personId2": 29, "type": "PARENT" },
+
+    { "id": 41, "personId1": 16, "personId2": 30, "type": "PARENT" },
+
+    { "id": 42, "personId1": 29, "personId2": 31, "type": "PARENT" },
+
+    { "id": 43, "personId1": 30, "personId2": 31, "type": "PARENT" },
+
+    { "id": 44, "personId1": 29, "personId2": 32, "type": "PARENT" },
+
+    { "id": 45, "personId1": 30, "personId2": 32, "type": "PARENT" },
+
+    { "id": 46, "personId1": 29, "personId2": 33, "type": "PARENT" },
+
+    { "id": 47, "personId1": 30, "personId2": 33, "type": "PARENT" }
+  ]
+}
