@@ -12,7 +12,7 @@
     "title": "Род Пушкиных",
     "author": "Музей А.С. Пушкина",
     "description": "Полная родословная Александра Сергеевича Пушкина, от его предков Ганнибалов до детей.",
-    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=Alexander_Pushkin_portrait_by_Tropinin_high_res.jpg&w=512",
+    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=AleksandrPushkin.jpg&w=512",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
   },
   {
@@ -20,7 +20,7 @@
     "title": "Род Романовых",
     "author": "Исторический фонд",
     "description": "Династия Романовых: от императора Николая II и его семьи до великих князей.",
-    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=Nicholas_II_of_Russia_by_Boissonnas_%26_Eggler_c1909.jpg&w=512",
+    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=Nicholas_II_by_Boissonnas_%26_Eggler_c1909.jpg&w=512",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/romanov.json"
   }
 ]
