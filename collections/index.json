@@ -4,7 +4,7 @@
     "title": "Род Толстых",
     "author": "Архивное сообщество",
     "description": "Генеалогическое древо Льва Николаевича Толстого, включая его детей и братьев.",
-    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=L.N.Tolstoy_Prokudin-Gorsky.jpg&w=512",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/L.N.Tolstoy_Prokudin-Gorsky.jpg?width=500",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/tolstoy.json"
   },
   {
@@ -12,7 +12,7 @@
     "title": "Род Пушкиных",
     "author": "Музей А.С. Пушкина",
     "description": "Полная родословная Александра Сергеевича Пушкина, от его предков Ганнибалов до детей.",
-    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=AleksandrPushkin.jpg&w=512",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/AleksandrPushkin.jpg?width=500",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/pushkin.json"
   },
   {
@@ -20,7 +20,7 @@
     "title": "Род Романовых",
     "author": "Исторический фонд",
     "description": "Династия Романовых: от императора Николая II и его семьи до великих князей.",
-    "imageUrl": "https://commons.wikimedia.org/w/thumb.php?f=Nicholas_II_by_Boissonnas_%26_Eggler_c1909.jpg&w=512",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Nicholas_II_by_Boissonnas_%26_Eggler_c1909.jpg?width=500",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/romanov.json"
   }
 ]
