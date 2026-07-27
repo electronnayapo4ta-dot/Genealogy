@@ -443,9 +443,37 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     fun exportDatabase(contentResolver: ContentResolver, uri: Uri) {
         viewModelScope.launch {
             try {
-                val peopleList = allPeople.value.map { it.toData() }
-                val relList = allRelationships.value.map { it.toData() }
-                val data = GenealogyData(peopleList, relList)
+                val currentTreeId = _activeTreeId.value
+                if (currentTreeId == null) {
+                    _statusMessage.value = "Ошибка: база не выбрана!"
+                    return@launch
+                }
+
+                // Fetch fresh data from DB to ensure completeness
+                val peopleEntities = repository.getPeopleForTreeSuspend(currentTreeId)
+                val relationshipEntities = repository.allRelationships.first().filter { it.treeId == currentTreeId }
+
+                // Normalize IDs to 1..N for a "clean" export file
+                val idMap = mutableMapOf<Long, Long>()
+                val normalizedPeople = peopleEntities.mapIndexed { index, person ->
+                    val newId = (index + 1).toLong()
+                    idMap[person.id] = newId
+                    person.toData().copy(id = newId)
+                }
+
+                val normalizedRelationships = relationshipEntities.mapIndexedNotNull { index, rel ->
+                    val newP1 = idMap[rel.personId1]
+                    val newP2 = idMap[rel.personId2]
+                    if (newP1 != null && newP2 != null) {
+                        rel.toData().copy(
+                            id = (index + 1).toLong(),
+                            personId1 = newP1,
+                            personId2 = newP2
+                        )
+                    } else null
+                }
+
+                val data = GenealogyData(normalizedPeople, normalizedRelationships)
                 val jsonString = jsonAdapter.indent("  ").toJson(data)
 
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -453,7 +481,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                         writer.write(jsonString)
                     }
                 }
-                _statusMessage.value = "Данные успешно экспортированы!"
+                _statusMessage.value = "Данные успешно экспортированы (${normalizedPeople.size} чел.)"
             } catch (e: Exception) {
                 Log.e("GenealogyVM", "Export failed", e)
                 _statusMessage.value = "Ошибка экспорта: ${e.localizedMessage}"
