@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -2727,7 +2728,9 @@ fun LibraryItemCard(collection: PublicCollection, onDownloadClick: () -> Unit) {
                     model = collection.imageUrl,
                     contentDescription = collection.title,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    placeholder = rememberVectorPainter(Icons.Default.AccountCircle),
+                    error = rememberVectorPainter(Icons.Default.Error)
                 )
             }
 

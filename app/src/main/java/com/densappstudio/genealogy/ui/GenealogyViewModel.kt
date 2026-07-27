@@ -127,18 +127,26 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     private fun fetchPublicCollections() {
         viewModelScope.launch {
             try {
+                Log.d("GenealogyVM", "Fetching public collections from GitHub...")
                 val indexUrl = "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/index.json"
                 val jsonString = withContext(Dispatchers.IO) {
                     val request = Request.Builder().url(indexUrl).build()
                     okHttpClient.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) null else response.body?.string()
+                        if (!response.isSuccessful) {
+                            Log.e("GenealogyVM", "GitHub request failed: ${response.code}")
+                            null
+                        } else {
+                            response.body?.string()
+                        }
                     }
                 }
                 
                 jsonString?.let {
+                    Log.d("GenealogyVM", "Index fetched successfully: $it")
                     val collections = collectionListAdapter.fromJson(it)
                     if (collections != null) {
                         _publicCollections.value = collections
+                        Log.d("GenealogyVM", "Public collections updated: ${collections.size}")
                     }
                 }
             } catch (e: Exception) {
