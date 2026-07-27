@@ -40,8 +40,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,15 +53,20 @@ import coil.compose.AsyncImage
 import com.densappstudio.genealogy.data.*
 import com.densappstudio.genealogy.ui.*
 import com.densappstudio.genealogy.ui.theme.MyApplicationTheme
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.animation.core.*
 import androidx.compose.animation.Animatable
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import java.io.File
@@ -381,7 +389,10 @@ fun TreeTabScreen(
     onAddClick: () -> Unit
 ) {
     val people by viewModel.allPeople.collectAsStateWithLifecycle()
+    val relationships by viewModel.allRelationships.collectAsStateWithLifecycle()
     val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
+    
+    var isVisualMode by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -406,6 +417,25 @@ fun TreeTabScreen(
                             )
                         )
                 )
+                
+                // Mode Toggle Switch
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Схема", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    Switch(
+                        checked = isVisualMode,
+                        onCheckedChange = { isVisualMode = it },
+                        modifier = Modifier.scale(0.7f),
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFFFD166))
+                    )
+                }
+
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -430,51 +460,29 @@ fun TreeTabScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (people.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FamilyRestroom,
-                            contentDescription = null,
-                            modifier = Modifier.size(72.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "База данных пуста",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Нажмите кнопку '+' внизу экрана, чтобы добавить первого человека в генеалогию рода.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                EmptyTreePlaceholder()
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 160.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(people) { person ->
-                        PersonGridItem(
-                            person = person,
-                            viewModel = viewModel,
-                            onClick = { viewModel.selectPerson(person.id) }
-                        )
+                if (isVisualMode) {
+                    VisualTreeView(
+                        people = people,
+                        relationships = relationships,
+                        onPersonClick = { viewModel.selectPerson(it) }
+                    )
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 160.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(people) { person ->
+                            PersonGridItem(
+                                person = person,
+                                viewModel = viewModel,
+                                onClick = { viewModel.selectPerson(person.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -496,6 +504,331 @@ fun TreeTabScreen(
 
 
 
+// ==========================================
+// GRID/CARD COMPONENT with Mourning Frame
+// ==========================================
+@Composable
+fun EmptyTreePlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.FamilyRestroom,
+                contentDescription = null,
+                modifier = Modifier.size(72.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "База данных пуста",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Нажмите кнопку '+' внизу экрана, чтобы добавить первого человека в генеалогию рода.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ==========================================
+// VISUAL TREE GRAPH VIEW
+// ==========================================
+@Composable
+fun VisualTreeView(
+    people: List<Person>,
+    relationships: List<Relationship>,
+    onPersonClick: (Long) -> Unit
+) {
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+        scale *= zoomChange
+        offset += offsetChange
+    }
+
+    val nodeWidth = 140.dp
+    val nodeHeight = 60.dp
+    val horizontalGap = 40.dp
+    val verticalGap = 100.dp
+
+    val generations = remember(people, relationships) {
+        calculateGenerations(people, relationships)
+    }
+
+    val density = LocalDensity.current
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+
+    // Pre-calculate centered positions in DP
+    val positions = remember(generations) {
+        val posMap = mutableMapOf<Long, Offset>()
+        generations.forEachIndexed { genIndex, layer ->
+            val layerWidth = layer.size * nodeWidth.value + (layer.size - 1) * horizontalGap.value
+            val startX = (screenWidth.value - layerWidth) / 2 
+            
+            layer.forEachIndexed { personIndex, person ->
+                val x = startX + personIndex * (nodeWidth.value + horizontalGap.value)
+                val y = 50f + genIndex * (nodeHeight.value + verticalGap.value)
+                posMap[person.id] = Offset(x, y)
+            }
+        }
+        posMap
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .background(MaterialTheme.colorScheme.surface)
+            .transformable(state = state)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            with(density) {
+                val nodeW = nodeWidth.toPx()
+                val nodeH = nodeHeight.toPx()
+
+                val spouseCenters = mutableMapOf<Pair<Long, Long>, Offset>()
+
+                // Helper to get pixel position
+                fun getPixelPos(id: Long): Offset? {
+                    val dpPos = positions[id] ?: return null
+                    return Offset(
+                        (dpPos.x.dp.toPx()) * scale + offset.x,
+                        (dpPos.y.dp.toPx()) * scale + offset.y
+                    )
+                }
+
+                // 1. Identify Spouses and Draw Golden Lines
+                relationships.filter { it.type == "SPOUSE" }.forEach { rel ->
+                    val p1 = getPixelPos(rel.personId1)
+                    val p2 = getPixelPos(rel.personId2)
+                    if (p1 != null && p2 != null) {
+                        // Ensure nodes are adjacent before drawing spouse line to avoid crossing
+                        val gen = generations.find { layer -> layer.any { it.id == rel.personId1 } }
+                        val idx1 = gen?.indexOfFirst { it.id == rel.personId1 } ?: -1
+                        val idx2 = gen?.indexOfFirst { it.id == rel.personId2 } ?: -1
+                        
+                        if (Math.abs(idx1 - idx2) == 1) {
+                            val start = if (p1.x < p2.x) p1.copy(x = p1.x + nodeW) else p1
+                            val end = if (p2.x < p1.x) p2.copy(x = p2.x + nodeW) else p2
+                            
+                            drawLine(
+                                color = Color(0xFFFFD166).copy(alpha = 0.8f),
+                                start = start.copy(y = start.y + nodeH / 2),
+                                end = end.copy(y = end.y + nodeH / 2),
+                                strokeWidth = 3.dp.toPx() * scale
+                            )
+                            
+                            val midX = (p1.x + p2.x + nodeW) / 2
+                            spouseCenters[Pair(minOf(rel.personId1, rel.personId2), maxOf(rel.personId1, rel.personId2))] = Offset(midX, p1.y + nodeH / 2)
+                        }
+                    }
+                }
+
+                // 2. Draw Parent-Child Elbow Connectors
+                val childToParents = relationships.filter { it.type == "PARENT" || it.type == "PARENT_ADOPTED" }
+                    .groupBy { it.personId2 }
+
+                childToParents.forEach { (childId, parentRels) ->
+                    val cPos = getPixelPos(childId) ?: return@forEach
+                    val childTop = cPos.copy(x = cPos.x + nodeW / 2)
+                    
+                    val parentIds = parentRels.map { it.personId1 }
+                    var sourcePoint: Offset? = null
+                    
+                    if (parentIds.size >= 2) {
+                        for (i in 0 until parentIds.size) {
+                            for (j in i + 1 until parentIds.size) {
+                                val coupleKey = Pair(minOf(parentIds[i], parentIds[j]), maxOf(parentIds[i], parentIds[j]))
+                                spouseCenters[coupleKey]?.let { sourcePoint = it }
+                                if (sourcePoint != null) break
+                            }
+                            if (sourcePoint != null) break
+                        }
+                    }
+                    
+                    if (sourcePoint == null && parentIds.isNotEmpty()) {
+                        getPixelPos(parentIds[0])?.let { pPos ->
+                            sourcePoint = Offset(pPos.x + nodeW / 2, pPos.y + nodeH)
+                        }
+                    }
+
+                    sourcePoint?.let { sp ->
+                        val midY = (sp.y + childTop.y) / 2
+                        val path = Path().apply {
+                            moveTo(sp.x, sp.y)
+                            lineTo(sp.x, midY)
+                            lineTo(childTop.x, midY)
+                            lineTo(childTop.x, childTop.y)
+                        }
+                        drawPath(
+                            path = path,
+                            color = Color.Gray.copy(alpha = 0.5f),
+                            style = Stroke(width = 2.dp.toPx() * scale)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 3. Draw Nodes
+        positions.forEach { (id, pos) ->
+            val person = people.find { it.id == id } ?: return@forEach
+            val pixelX = with(density) { pos.x.dp.toPx() * scale + offset.x }
+            val pixelY = with(density) { pos.y.dp.toPx() * scale + offset.y }
+
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
+                    .size(nodeWidth * scale, nodeHeight * scale)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (person.isDeceased) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.primaryContainer)
+                    .border(1.dp, if (person.isDeceased) Color.Black else MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                    .clickable { onPersonClick(person.id) },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = person.lastName,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
+                        color = if (person.isDeceased) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = person.firstName,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
+                        color = if (person.isDeceased) Color.LightGray else MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun calculateGenerations(people: List<Person>, relationships: List<Relationship>): List<List<Person>> {
+    val personToLevel = mutableMapOf<Long, Int>()
+    val personToParents = mutableMapOf<Long, MutableList<Long>>()
+    val personToSpouse = mutableMapOf<Long, Long>()
+
+    relationships.forEach { rel ->
+        if (rel.type == "PARENT" || rel.type == "PARENT_ADOPTED") {
+            personToParents.getOrPut(rel.personId2) { mutableListOf() }.add(rel.personId1)
+        } else if (rel.type == "SPOUSE") {
+            personToSpouse[rel.personId1] = rel.personId2
+            personToSpouse[rel.personId2] = rel.personId1
+        }
+    }
+
+    // Pass 1: Initial level by parent chain
+    fun getLevel(id: Long, visited: Set<Long>): Int {
+        if (id in personToLevel) return personToLevel[id]!!
+        if (id in visited) return 0 // Cycle protection
+        
+        val parents = personToParents[id] ?: emptyList()
+        if (parents.isEmpty()) {
+            personToLevel[id] = 0
+            return 0
+        }
+        
+        val maxParentLevel = parents.maxOf { getLevel(it, visited + id) }
+        val level = maxParentLevel + 1
+        personToLevel[id] = level
+        return level
+    }
+
+    people.forEach { getLevel(it.id, emptySet()) }
+
+    // Pass 2: Align Spouses
+    repeat(2) { // Couple of passes to stabilize
+        people.forEach { person ->
+            val spouseId = personToSpouse[person.id]
+            if (spouseId != null) {
+                val myLevel = personToLevel[person.id] ?: 0
+                val spouseLevel = personToLevel[spouseId] ?: 0
+                val targetLevel = maxOf(myLevel, spouseLevel)
+                personToLevel[person.id] = targetLevel
+                personToLevel[spouseId] = targetLevel
+            }
+        }
+        
+        // Push children down if their parent moved
+        people.forEach { person ->
+            val parents = personToParents[person.id] ?: emptyList()
+            if (parents.isNotEmpty()) {
+                val maxParentLevel = parents.maxOf { personToLevel[it] ?: 0 }
+                if ((personToLevel[person.id] ?: 0) <= maxParentLevel) {
+                    personToLevel[person.id] = maxParentLevel + 1
+                }
+            }
+        }
+    }
+
+    // Group into generations
+    val maxLevel = personToLevel.values.maxOrNull() ?: 0
+    val generations = List(maxLevel + 1) { mutableListOf<Person>() }
+    people.forEach { person ->
+        val level = personToLevel[person.id] ?: 0
+        generations[level].add(person)
+    }
+
+    // Sort people within each generation to keep spouses adjacent
+    val sortedGenerations = generations.map { levelPeople ->
+        val sorted = mutableListOf<Person>()
+        val visited = mutableSetOf<Long>()
+        
+        levelPeople.forEach { person ->
+            if (person.id !in visited) {
+                sorted.add(person)
+                visited.add(person.id)
+                
+                // Find and place spouse immediately after
+                val spouseId = personToSpouse[person.id]
+                if (spouseId != null && spouseId !in visited) {
+                    val spouse = levelPeople.find { it.id == spouseId }
+                    if (spouse != null) {
+                        sorted.add(spouse)
+                        visited.add(spouseId)
+                    }
+                }
+            }
+        }
+        sorted
+    }
+
+    return sortedGenerations.filter { it.isNotEmpty() }
+}
+
+fun getNodePosition(
+    person: Person, 
+    generations: List<List<Person>>, 
+    nodeW: Float, 
+    nodeH: Float, 
+    gapH: Float, 
+    gapV: Float
+): Offset {
+    generations.forEachIndexed { genIndex, layer ->
+        val personIndex = layer.indexOfFirst { it.id == person.id }
+        if (personIndex != -1) {
+            return Offset(
+                personIndex * (nodeW + gapH) + 50.dp.value * 2.5f, // Manual offset padding
+                genIndex * (nodeH + gapV) + 50.dp.value * 2.5f
+            )
+        }
+    }
+    return Offset.Zero
+}
 // ==========================================
 // GRID/CARD COMPONENT with Mourning Frame
 // ==========================================
