@@ -373,6 +373,227 @@
   "deathYear": 1933,
   "isDeceased": true,
   "biography": "Великий князь Александр Михайлович, муж Ксении Александровны."
+},
+{
+  "id": 34,
+  "firstName": "Ольга",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1895,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Великая княжна Ольга Николаевна, старшая дочь Николая II."
+},
+{
+  "id": 35,
+  "firstName": "Татьяна",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1897,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Великая княжна Татьяна Николаевна."
+},
+{
+  "id": 36,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1899,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Великая княжна Мария Николаевна."
+},
+{
+  "id": 37,
+  "firstName": "Анастасия",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1901,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Великая княжна Анастасия Николаевна."
+},
+{
+  "id": 38,
+  "firstName": "Алексей",
+  "lastName": "Романов",
+  "patronymic": "Николаевич",
+  "gender": "MALE",
+  "birthYear": 1904,
+  "deathYear": 1918,
+  "isDeceased": true,
+  "biography": "Цесаревич Алексей Николаевич, наследник престола."
+},
+{
+  "id": 39,
+  "firstName": "Константин",
+  "lastName": "Романов",
+  "patronymic": "Павлович",
+  "gender": "MALE",
+  "birthYear": 1779,
+  "deathYear": 1831,
+  "isDeceased": true,
+  "biography": "Великий князь Константин Павлович, наместник Царства Польского."
+},
+{
+  "id": 40,
+  "firstName": "Михаил",
+  "lastName": "Романов",
+  "patronymic": "Павлович",
+  "gender": "MALE",
+  "birthYear": 1798,
+  "deathYear": 1849,
+  "isDeceased": true,
+  "biography": "Великий князь Михаил Павлович, генерал-инспектор артиллерии."
+},
+{
+  "id": 41,
+  "firstName": "Елена",
+  "lastName": "Романова",
+  "patronymic": "Павловна",
+  "maidenName": "Вюртембергская",
+  "gender": "FEMALE",
+  "birthYear": 1807,
+  "deathYear": 1873,
+  "isDeceased": true,
+  "biography": "Великая княгиня Елена Павловна, супруга Михаила Павловича."
+},
+{
+  "id": 42,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Михайловна",
+  "gender": "FEMALE",
+  "birthYear": 1825,
+  "deathYear": 1846,
+  "isDeceased": true,
+  "biography": "Великая княжна Мария Михайловна."
+},
+{
+  "id": 43,
+  "firstName": "Екатерина",
+  "lastName": "Романова",
+  "patronymic": "Михайловна",
+  "gender": "FEMALE",
+  "birthYear": 1827,
+  "deathYear": 1894,
+  "isDeceased": true,
+  "biography": "Великая княжна Екатерина Михайловна."
+},
+{
+  "id": 44,
+  "firstName": "Александр",
+  "lastName": "Романов",
+  "patronymic": "Михайлович",
+  "gender": "MALE",
+  "birthYear": 1833,
+  "deathYear": 1909,
+  "isDeceased": true,
+  "biography": "Великий князь Александр Михайлович."
+},
+{
+  "id": 45,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Павловна",
+  "gender": "FEMALE",
+  "birthYear": 1786,
+  "deathYear": 1859,
+  "isDeceased": true,
+  "biography": "Великая княжна Мария Павловна, герцогиня Саксен-Веймар-Эйзенахская."
+},
+{
+  "id": 46,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Александровна",
+  "gender": "FEMALE",
+  "birthYear": 1842,
+  "deathYear": 1909,
+  "isDeceased": true,
+  "biography": "Великая княжна Мария Александровна, дочь Александра II, герцогиня Эдинбургская."
+},
+{
+  "id": 47,
+  "firstName": "Алексей",
+  "lastName": "Романов",
+  "patronymic": "Александрович",
+  "gender": "MALE",
+  "birthYear": 1850,
+  "deathYear": 1908,
+  "isDeceased": true,
+  "biography": "Великий князь Алексей Александрович, генерал-адмирал."
+},
+{
+  "id": 48,
+  "firstName": "Сергей",
+  "lastName": "Романов",
+  "patronymic": "Александрович",
+  "gender": "MALE",
+  "birthYear": 1857,
+  "deathYear": 1905,
+  "isDeceased": true,
+  "biography": "Великий князь Сергей Александрович, московский генерал-губернатор."
+},
+{
+  "id": 49,
+  "firstName": "Павел",
+  "lastName": "Романов",
+  "patronymic": "Александрович",
+  "gender": "MALE",
+  "birthYear": 1860,
+  "deathYear": 1919,
+  "isDeceased": true,
+  "biography": "Великий князь Павел Александрович, младший сын Александра II."
+},
+{
+  "id": 50,
+  "firstName": "Мария",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1819,
+  "deathYear": 1876,
+  "isDeceased": true,
+  "biography": "Великая княжна Мария Николаевна, дочь Николая I, президент Императорской Академии художеств."
+},
+{
+  "id": 51,
+  "firstName": "Ольга",
+  "lastName": "Романова",
+  "patronymic": "Николаевна",
+  "gender": "FEMALE",
+  "birthYear": 1822,
+  "deathYear": 1892,
+  "isDeceased": true,
+  "biography": "Великая княжна Ольга Николаевна, королева Вюртембергская."
+},
+{
+  "id": 52,
+  "firstName": "Александр",
+  "lastName": "Романов",
+  "patronymic": "Николаевич",
+  "gender": "MALE",
+  "birthYear": 1823,
+  "deathYear": 1883,
+  "isDeceased": true,
+  "biography": "Великий князь Александр Николаевич, генерал-инспектор инженерных войск."
+},
+{
+  "id": 53,
+  "firstName": "Михаил",
+  "lastName": "Романов",
+  "patronymic": "Николаевич",
+  "gender": "MALE",
+  "birthYear": 1832,
+  "deathYear": 1909,
+  "isDeceased": true,
+  "biography": "Великий князь Михаил Николаевич, генерал-фельдмаршал."
 }
   ],
   "relationships": [
@@ -458,6 +679,35 @@
 
     { "id": 46, "personId1": 29, "personId2": 33, "type": "PARENT" },
 
-    { "id": 47, "personId1": 30, "personId2": 33, "type": "PARENT" }
+    { "id": 47, "personId1": 30, "personId2": 33, "type": "PARENT" },
+
+{ "id": 48, "personId1": 19, "personId2": 34, "type": "PARENT" },
+{ "id": 49, "personId1": 19, "personId2": 35, "type": "PARENT" },
+{ "id": 50, "personId1": 19, "personId2": 36, "type": "PARENT" },
+{ "id": 51, "personId1": 19, "personId2": 37, "type": "PARENT" },
+{ "id": 52, "personId1": 19, "personId2": 38, "type": "PARENT" },
+{ "id": 53, "personId1": 14, "personId2": 39, "type": "PARENT" },
+
+{ "id": 54, "personId1": 14, "personId2": 40, "type": "PARENT" },
+
+{ "id": 55, "personId1": 40, "personId2": 41, "type": "SPOUSE" },
+
+{ "id": 56, "personId1": 40, "personId2": 42, "type": "PARENT" },
+{ "id": 57, "personId1": 41, "personId2": 42, "type": "PARENT" },
+
+{ "id": 58, "personId1": 40, "personId2": 43, "type": "PARENT" },
+{ "id": 59, "personId1": 41, "personId2": 43, "type": "PARENT" },
+
+{ "id": 60, "personId1": 40, "personId2": 44, "type": "PARENT" },
+{ "id": 61, "personId1": 41, "personId2": 44, "type": "PARENT" },
+{ "id": 62, "personId1": 14, "personId2": 45, "type": "PARENT" },
+{ "id": 63, "personId1": 17, "personId2": 46, "type": "PARENT" },
+{ "id": 64, "personId1": 17, "personId2": 47, "type": "PARENT" },
+{ "id": 65, "personId1": 17, "personId2": 48, "type": "PARENT" },
+{ "id": 66, "personId1": 17, "personId2": 49, "type": "PARENT" },
+{ "id": 67, "personId1": 16, "personId2": 50, "type": "PARENT" },
+{ "id": 68, "personId1": 16, "personId2": 51, "type": "PARENT" },
+{ "id": 69, "personId1": 16, "personId2": 52, "type": "PARENT" },
+{ "id": 70, "personId1": 16, "personId2": 53, "type": "PARENT" }
   ]
 }
