@@ -1,0 +1,68 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "firstName": "Михаил",
+      "lastName": "Лермонтов",
+      "patronymic": "Юрьевич",
+      "gender": "MALE",
+      "birthYear": 1814,
+      "deathYear": 1841,
+      "isDeceased": true,
+      "biography": "Русский поэт, прозаик, драматург. Один из величайших авторов XIX века."
+    },
+    {
+      "id": 2,
+      "firstName": "Юрий",
+      "lastName": "Лермонтов",
+      "patronymic": "Петрович",
+      "gender": "MALE",
+      "birthYear": 1787,
+      "deathYear": 1831,
+      "isDeceased": true,
+      "biography": "Отец поэта, офицер. Его конфликт с бабушкой Лермонтова стал ключевым фактором судьбы Михаила."
+    },
+    {
+      "id": 3,
+      "firstName": "Мария",
+      "lastName": "Лермонтова",
+      "patronymic": "Михайловна",
+      "maidenName": "Арсеньева",
+      "gender": "FEMALE",
+      "birthYear": 1795,
+      "deathYear": 1817,
+      "isDeceased": true,
+      "biography": "Мать Лермонтова, умерла рано. Михаил воспитывался бабушкой."
+    },
+    {
+      "id": 4,
+      "firstName": "Елизавета",
+      "lastName": "Арсеньева",
+      "patronymic": "Алексеевна",
+      "gender": "FEMALE",
+      "birthYear": 1773,
+      "deathYear": 1845,
+      "isDeceased": true,
+      "biography": "Бабушка Лермонтова, воспитавшая поэта. Ключевая фигура его жизни."
+    },
+    {
+      "id": 5,
+      "firstName": "Пётр",
+      "lastName": "Лермонтов",
+      "patronymic": "Алексеевич",
+      "gender": "MALE",
+      "birthYear": 1740,
+      "deathYear": 1810,
+      "isDeceased": true,
+      "biography": "Предок Лермонтова, представитель русской ветви шотландского рода Лермонтов."
+    }
+  ],
+  "relationships": [
+    { "id": 1, "personId1": 2, "personId2": 1, "type": "PARENT" },
+    { "id": 2, "personId1": 3, "personId2": 1, "type": "PARENT" },
+
+    { "id": 3, "personId1": 4, "personId2": 3, "type": "PARENT" },
+
+    { "id": 4, "personId1": 5, "personId2": 2, "type": "PARENT" }
+  ]
+}

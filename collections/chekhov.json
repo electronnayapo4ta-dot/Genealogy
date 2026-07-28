@@ -1,0 +1,112 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "firstName": "Антон",
+      "lastName": "Чехов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1860,
+      "deathYear": 1904,
+      "isDeceased": true,
+      "biography": "Русский писатель, драматург, врач. Один из величайших авторов мировой литературы."
+    },
+    {
+      "id": 2,
+      "firstName": "Павел",
+      "lastName": "Чехов",
+      "patronymic": "Егорович",
+      "gender": "MALE",
+      "birthYear": 1825,
+      "deathYear": 1898,
+      "isDeceased": true,
+      "biography": "Отец писателя, купец, владел лавкой, отличался строгим характером."
+    },
+    {
+      "id": 3,
+      "firstName": "Евгения",
+      "lastName": "Чехова",
+      "patronymic": "Яковлевна",
+      "maidenName": "Морозова",
+      "gender": "FEMALE",
+      "birthYear": 1835,
+      "deathYear": 1919,
+      "isDeceased": true,
+      "biography": "Мать писателя, добрая и религиозная женщина, происходила из купеческой семьи."
+    },
+    {
+      "id": 4,
+      "firstName": "Александр",
+      "lastName": "Чехов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1855,
+      "deathYear": 1904,
+      "isDeceased": true,
+      "biography": "Старший брат Антона, писатель, журналист, автор мемуаров."
+    },
+    {
+      "id": 5,
+      "firstName": "Николай",
+      "lastName": "Чехов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1858,
+      "deathYear": 1889,
+      "isDeceased": true,
+      "biography": "Брат Антона, талантливый художник, умер молодым от туберкулёза."
+    },
+    {
+      "id": 6,
+      "firstName": "Иван",
+      "lastName": "Чехов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1861,
+      "deathYear": 1922,
+      "isDeceased": true,
+      "biography": "Брат Антона, учитель, педагог, автор воспоминаний."
+    },
+    {
+      "id": 7,
+      "firstName": "Мария",
+      "lastName": "Чехова",
+      "patronymic": "Павловна",
+      "gender": "FEMALE",
+      "birthYear": 1863,
+      "deathYear": 1957,
+      "isDeceased": true,
+      "biography": "Сестра Антона, художница, хранительница его наследия."
+    },
+    {
+      "id": 8,
+      "firstName": "Михаил",
+      "lastName": "Чехов",
+      "patronymic": "Павлович",
+      "gender": "MALE",
+      "birthYear": 1865,
+      "deathYear": 1937,
+      "isDeceased": true,
+      "biography": "Брат Антона, писатель, автор юмористических рассказов."
+    }
+  ],
+  "relationships": [
+    { "id": 1, "personId1": 2, "personId2": 1, "type": "PARENT" },
+    { "id": 2, "personId1": 3, "personId2": 1, "type": "PARENT" },
+
+    { "id": 3, "personId1": 2, "personId2": 4, "type": "PARENT" },
+    { "id": 4, "personId1": 3, "personId2": 4, "type": "PARENT" },
+
+    { "id": 5, "personId1": 2, "personId2": 5, "type": "PARENT" },
+    { "id": 6, "personId1": 3, "personId2": 5, "type": "PARENT" },
+
+    { "id": 7, "personId1": 2, "personId2": 6, "type": "PARENT" },
+    { "id": 8, "personId1": 3, "personId2": 6, "type": "PARENT" },
+
+    { "id": 9, "personId1": 2, "personId2": 7, "type": "PARENT" },
+    { "id": 10, "personId1": 3, "personId2": 7, "type": "PARENT" },
+
+    { "id": 11, "personId1": 2, "personId2": 8, "type": "PARENT" },
+    { "id": 12, "personId1": 3, "personId2": 8, "type": "PARENT" }
+  ]
+}

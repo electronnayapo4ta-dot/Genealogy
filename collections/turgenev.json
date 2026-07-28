@@ -1,0 +1,83 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "firstName": "Иван",
+      "lastName": "Тургенев",
+      "patronymic": "Сергеевич",
+      "gender": "MALE",
+      "birthYear": 1818,
+      "deathYear": 1883,
+      "isDeceased": true,
+      "biography": "Русский писатель, автор 'Отцов и детей', один из крупнейших прозаиков XIX века."
+    },
+    {
+      "id": 2,
+      "firstName": "Сергей",
+      "lastName": "Тургенев",
+      "patronymic": "Николаевич",
+      "gender": "MALE",
+      "birthYear": 1793,
+      "deathYear": 1834,
+      "isDeceased": true,
+      "biography": "Отец писателя, офицер, дворянин."
+    },
+    {
+      "id": 3,
+      "firstName": "Варвара",
+      "lastName": "Тургенева",
+      "patronymic": "Петровна",
+      "maidenName": "Лутовинова",
+      "gender": "FEMALE",
+      "birthYear": 1790,
+      "deathYear": 1850,
+      "isDeceased": true,
+      "biography": "Мать Тургенева, владелица Спасского-Лутовинова, известная своей суровостью."
+    },
+    {
+      "id": 4,
+      "firstName": "Николай",
+      "lastName": "Тургенев",
+      "patronymic": "Сергеевич",
+      "gender": "MALE",
+      "birthYear": 1816,
+      "deathYear": 1879,
+      "isDeceased": true,
+      "biography": "Старший брат писателя, экономист, общественный деятель."
+    },
+    {
+      "id": 5,
+      "firstName": "Александр",
+      "lastName": "Тургенев",
+      "patronymic": "Сергеевич",
+      "gender": "MALE",
+      "birthYear": 1821,
+      "deathYear": 1857,
+      "isDeceased": true,
+      "biography": "Младший брат писателя, умер молодым."
+    },
+    {
+      "id": 6,
+      "firstName": "Пётр",
+      "lastName": "Лутовинов",
+      "patronymic": "Андреевич",
+      "gender": "MALE",
+      "birthYear": 1760,
+      "deathYear": 1824,
+      "isDeceased": true,
+      "biography": "Дед Тургенева по матери, владелец имения Спасское-Лутовиново."
+    }
+  ],
+  "relationships": [
+    { "id": 1, "personId1": 2, "personId2": 1, "type": "PARENT" },
+    { "id": 2, "personId1": 3, "personId2": 1, "type": "PARENT" },
+
+    { "id": 3, "personId1": 2, "personId2": 4, "type": "PARENT" },
+    { "id": 4, "personId1": 3, "personId2": 4, "type": "PARENT" },
+
+    { "id": 5, "personId1": 2, "personId2": 5, "type": "PARENT" },
+    { "id": 6, "personId1": 3, "personId2": 5, "type": "PARENT" },
+
+    { "id": 7, "personId1": 6, "personId2": 3, "type": "PARENT" }
+  ]
+}

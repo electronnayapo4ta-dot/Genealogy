@@ -1,0 +1,98 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "firstName": "Наталья",
+      "lastName": "Пушкина",
+      "patronymic": "Николаевна",
+      "maidenName": "Гончарова",
+      "gender": "FEMALE",
+      "birthYear": 1812,
+      "deathYear": 1863,
+      "isDeceased": true,
+      "biography": "Наталья Николаевна Гончарова, жена А.С. Пушкина, одна из самых известных женщин своего времени."
+    },
+    {
+      "id": 2,
+      "firstName": "Николай",
+      "lastName": "Гончаров",
+      "patronymic": "Афанасьевич",
+      "gender": "MALE",
+      "birthYear": 1787,
+      "deathYear": 1861,
+      "isDeceased": true,
+      "biography": "Отец Натальи Николаевны, московский дворянин."
+    },
+    {
+      "id": 3,
+      "firstName": "Наталья",
+      "lastName": "Гончарова",
+      "patronymic": "Петровна",
+      "maidenName": "Гончарова",
+      "gender": "FEMALE",
+      "birthYear": 1796,
+      "deathYear": 1866,
+      "isDeceased": true,
+      "biography": "Мать Натальи Николаевны, происходила из старинного рода Гончаровых."
+    },
+    {
+      "id": 4,
+      "firstName": "Екатерина",
+      "lastName": "Гончарова",
+      "patronymic": "Николаевна",
+      "gender": "FEMALE",
+      "birthYear": 1811,
+      "deathYear": 1871,
+      "isDeceased": true,
+      "biography": "Старшая сестра Натальи Николаевны."
+    },
+    {
+      "id": 5,
+      "firstName": "Александра",
+      "lastName": "Гончарова",
+      "patronymic": "Николаевна",
+      "gender": "FEMALE",
+      "birthYear": 1810,
+      "deathYear": 1839,
+      "isDeceased": true,
+      "biography": "Сестра Натальи Николаевны."
+    },
+    {
+      "id": 6,
+      "firstName": "Сергей",
+      "lastName": "Гончаров",
+      "patronymic": "Николаевич",
+      "gender": "MALE",
+      "birthYear": 1817,
+      "deathYear": 1863,
+      "isDeceased": true,
+      "biography": "Брат Натальи Николаевны."
+    },
+    {
+      "id": 7,
+      "firstName": "Александр",
+      "lastName": "Пушкин",
+      "patronymic": "Сергеевич",
+      "gender": "MALE",
+      "birthYear": 1799,
+      "deathYear": 1837,
+      "isDeceased": true,
+      "biography": "Великий русский поэт, супруг Натальи Николаевны."
+    }
+  ],
+  "relationships": [
+    { "id": 1, "personId1": 2, "personId2": 1, "type": "PARENT" },
+    { "id": 2, "personId1": 3, "personId2": 1, "type": "PARENT" },
+
+    { "id": 3, "personId1": 2, "personId2": 4, "type": "PARENT" },
+    { "id": 4, "personId1": 3, "personId2": 4, "type": "PARENT" },
+
+    { "id": 5, "personId1": 2, "personId2": 5, "type": "PARENT" },
+    { "id": 6, "personId1": 3, "personId2": 5, "type": "PARENT" },
+
+    { "id": 7, "personId1": 2, "personId2": 6, "type": "PARENT" },
+    { "id": 8, "personId1": 3, "personId2": 6, "type": "PARENT" },
+
+    { "id": 9, "personId1": 1, "personId2": 7, "type": "SPOUSE" }
+  ]
+}
