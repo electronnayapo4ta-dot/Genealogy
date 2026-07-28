@@ -25,6 +25,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -998,7 +999,7 @@ fun PersonDetailsScreen(
                 title = { Text(person.fullName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
                 actions = {
@@ -1166,7 +1167,7 @@ fun PersonDetailsScreen(
                     )
                 }
 
-                Divider(color = if (person.isDeceased) Color.DarkGray else MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = if (person.isDeceased) Color.DarkGray else MaterialTheme.colorScheme.outlineVariant)
                 
                 // CONNECTIONS SECTION
                 Row(
@@ -1585,7 +1586,7 @@ fun AddRelationshipDialog(
                                     )
                                     Text(person.fullName, style = MaterialTheme.typography.bodyMedium)
                                 }
-                                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
                         }
                     }
@@ -1817,7 +1818,7 @@ fun EditPersonScreen(
                 )
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Birth Info
             OutlinedTextField(
@@ -1870,7 +1871,7 @@ fun EditPersonScreen(
                 )
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Biography & Resume details
             OutlinedTextField(
@@ -2055,7 +2056,7 @@ fun SearchTabScreen(viewModel: GenealogyViewModel) {
                 }
 
                 // 5. Relations Explorer Relative to a focus person
-                Divider()
+                HorizontalDivider()
                 Text("Поиск по степени родства:", style = MaterialTheme.typography.labelMedium)
                 
                 Card(
@@ -2204,7 +2205,7 @@ fun SearchTabScreen(viewModel: GenealogyViewModel) {
                                 )
                                 Text(person.fullName, style = MaterialTheme.typography.bodyMedium)
                             }
-                            Divider()
+                            HorizontalDivider()
                         }
                     }
 
@@ -2432,7 +2433,7 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
         // SECTION 2: PUBLIC COLLECTIONS
         Text("Общественные коллекции", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -2863,7 +2864,7 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
         // EXPORT CARD
         Text("Выгрузка данных", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

@@ -32,6 +32,7 @@ enum class RelationFilter {
     CLOSE_CIRCLE // Friends, Nannies, Wet Nurses
 }
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GenealogyViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = GenealogyDatabase.getDatabase(application)
@@ -45,7 +46,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val activeTree: StateFlow<GenealogyTree?> = combine(allTrees, _activeTreeId) { trees, activeId ->
-        trees.find { it.id == activeId } ?: trees.firstOrNull()
+        trees.find { it.id == activeId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val allPeople: StateFlow<List<Person>> = activeTree
@@ -536,7 +537,9 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        var treeId = activeTree.value?.id
+        // Use _activeTreeId directly to avoid race conditions with the combined activeTree state
+        var treeId = _activeTreeId.value
+
         if (treeId == null) {
             treeId = repository.insertTree(GenealogyTree(name = "Импортированная база"))
             _activeTreeId.value = treeId

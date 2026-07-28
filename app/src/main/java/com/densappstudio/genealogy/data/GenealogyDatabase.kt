@@ -20,7 +20,7 @@ abstract class GenealogyDatabase : RoomDatabase() {
                     GenealogyDatabase::class.java,
                     "genealogy_database"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(true)
                 .build()
                 INSTANCE = instance
                 instance
