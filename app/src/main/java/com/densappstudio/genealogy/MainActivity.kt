@@ -3,6 +3,7 @@ package com.densappstudio.genealogy
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -2990,6 +2991,94 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SUPPORT THE DEVELOPER SECTION
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
+            border = BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.5f))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Поддержка разработчика",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    // Icon(Icons.Default.Close, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "Genealogy Tree DB создается с любовью и преданностью делу. Если вам нравится приложение и вы хотите поддержать будущие обновления, вы можете сделать это ниже. Спасибо!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.LightGray
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://boosty.to/densappstudio"))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3FAF7D)),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Icon(Icons.Default.Coffee, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Купить кофе — Boosty",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // FOOTER
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Сделано с любовью к истории рода",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                Icons.Default.Favorite,
+                contentDescription = null,
+                tint = Color(0xFF3FAF7D),
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "DensAppStudio © 2026",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
