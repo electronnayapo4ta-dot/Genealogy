@@ -23,36 +23,36 @@
     "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Nicholas_II_by_Boissonnas_%26_Eggler_c1909.jpg?width=512",
     "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/romanov.json"
   },
-{
-  "id": "chekhov",
-  "title": "Род Чеховых",
-  "author": "Литературный архив",
-  "description": "Генеалогическое древо семьи Антона Павловича Чехова.",
-  "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Anton_Chekhov_1893.jpg?width=512",
-  "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/chekhov.json"
-},
-{
-  "id": "goncharov",
-  "title": "Род Гончаровых",
-  "author": "Исторический архив",
-  "description": "Родословная Натальи Николаевны Гончаровой, супруги А.С. Пушкина.",
-  "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Natalia_Goncharova.jpg?width=512",
-  "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/goncharov.json"
-},
-{
-  "id": "lermontov",
-  "title": "Род Лермонтовых",
-  "author": "Литературный архив",
-  "description": "Генеалогическое древо семьи Михаила Юрьевича Лермонтова.",
-  "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Mikhail_Lermontov.jpg?width=512",
-  "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/lermontov.json"
-},
-{
-  "id": "turgenev",
-  "title": "Род Тургеневых",
-  "author": "Литературный архив",
-  "description": "Родословная семьи Ивана Сергеевича Тургенева.",
-  "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Ivan_Turgenev_1872.jpg?width=512",
-  "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/turgenev.json"
-}
+  {
+    "id": "chekhov",
+    "title": "Род Чеховых",
+    "author": "Литературный архив",
+    "description": "Генеалогическое древо семьи Антона Павловича Чехова.",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Chekhov_ht.jpg?width=512",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/chekhov.json"
+  },
+  {
+    "id": "goncharov",
+    "title": "Род Гончаровых",
+    "author": "Исторический архив",
+    "description": "Родословная Натальи Николаевны Гончаровой, супруги А.С. Пушкина.",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Natalia_Pushkina_by_Brullov.jpg?width=512",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/goncharov.json"
+  },
+  {
+    "id": "lermontov",
+    "title": "Род Лермонтовых",
+    "author": "Литературный архив",
+    "description": "Генеалогическое древо семьи Михаила Юрьевича Лермонтова.",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Mikhail_lermontov.jpg?width=512",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/lermontov.json"
+  },
+  {
+    "id": "turgenev",
+    "title": "Род Тургеневых",
+    "author": "Литературный архив",
+    "description": "Родословная семьи Ивана Сергеевича Тургенева.",
+    "imageUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Turgenev_1872_by_Perov.jpg?width=512",
+    "downloadUrl": "https://raw.githubusercontent.com/electronnayapo4ta-dot/Genealogy/main/collections/turgenev.json"
+  }
 ]
