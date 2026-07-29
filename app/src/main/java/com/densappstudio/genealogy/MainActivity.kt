@@ -2324,6 +2324,7 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
     
     var treeToEdit by remember { mutableStateOf<GenealogyTree?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showGuideDialog by remember { mutableStateOf(false) }
 
     val collectionsSourceUrl = "https://github.com/electronnayapo4ta-dot/Genealogy/tree/main/collections"
 
@@ -2346,12 +2347,25 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(
-            "Моя Библиотека",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Моя Библиотека",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            IconButton(onClick = { showGuideDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.AutoStories,
+                    contentDescription = "Как опубликовать свой род",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
 
         // NEW: Source Link Section
         Card(
@@ -2567,6 +2581,85 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
                 }
             }
         )
+    }
+
+    if (showGuideDialog) {
+        ContributionGuideDialog(onDismiss = { showGuideDialog = false })
+    }
+}
+
+@Composable
+fun ContributionGuideDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoStories, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Как опубликовать свой род?")
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Вы создали уникальное древо и хотите поделиться им с миром? Мы поможем вам добавить его в нашу общественную библиотеку!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                GuideStep(
+                    number = "1",
+                    title = "Экспорт данных",
+                    description = "Перейдите во вкладку 'Данные' и нажмите 'Экспортировать БД в файл'. Вы получите JSON-файл со всеми именами и связями."
+                )
+
+                GuideStep(
+                    number = "2",
+                    title = "Фотографии в облаке",
+                    description = "Чтобы другие пользователи видели фото, они должны быть доступны по прямым ссылкам в интернете. Загрузите их в любое облако (например, GitHub или Google Диск)."
+                )
+
+                GuideStep(
+                    number = "3",
+                    title = "Заявка на публикацию",
+                    description = "Отправьте ваш JSON-файл и краткое описание коллекции на почту: densappstudio@yandex.ru"
+                )
+
+                Text(
+                    "После модерации ваша семейная история появится в списке 'Общественные коллекции' и станет доступна всем пользователям приложения!",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Понятно")
+            }
+        }
+    )
+}
+
+@Composable
+fun GuideStep(number: String, title: String, description: String) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(24.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(number, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(description, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 
