@@ -2935,6 +2935,15 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
         }
     }
 
+    // PDF Export launcher
+    val exportPdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri: Uri? ->
+        uri?.let {
+            viewModel.exportToPdf(context.contentResolver, it)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -3023,7 +3032,18 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
                 ) {
                     Icon(Icons.Default.Upload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Экспортировать БД в файл")
+                    Text("Экспортировать БД в JSON")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        exportPdfLauncher.launch("genealogy_report.pdf")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Экспортировать древо в PDF")
                 }
             }
         }

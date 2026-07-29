@@ -20,6 +20,11 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Calendar
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.Layout
 
 enum class LivingFilter { ALL, LIVING, DECEASED }
 enum class RelationFilter {
@@ -629,6 +634,88 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun clearStatusMessage() {
         _statusMessage.value = null
+    }
+
+    fun exportToPdf(contentResolver: ContentResolver, uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val currentTree = activeTree.value ?: return@launch
+                val people = allPeople.value
+                val relationships = allRelationships.value
+                
+                withContext(Dispatchers.IO) {
+                    val pdfDocument = PdfDocument()
+                    val paint = Paint()
+                    val textPaint = TextPaint()
+                    
+                    // A4 size: 595 x 842 points
+                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+                    var page = pdfDocument.startPage(pageInfo)
+                    var canvas = page.canvas
+                    var y = 50f
+
+                    // Title
+                    textPaint.isFakeBoldText = true
+                    textPaint.textSize = 18f
+                    canvas.drawText("Отчет по роду: ${currentTree.name}", 50f, y, textPaint)
+                    y += 30f
+                    
+                    textPaint.isFakeBoldText = false
+                    textPaint.textSize = 12f
+                    canvas.drawText("Сформировано в приложении Genealogy Tree DB", 50f, y, textPaint)
+                    y += 40f
+
+                    // Group by generations (reuse our logic)
+                    // Note: calculateGenerations is currently in MainActivity, but we can access it if we move it or duplicate for now
+                    // For the PDF report, let's just list people alphabetically with their full details as requested
+                    people.sortedBy { it.lastName }.forEach { person ->
+                        if (y > 780f) { // Page break logic
+                            pdfDocument.finishPage(page)
+                            page = pdfDocument.startPage(pageInfo)
+                            canvas = page.canvas
+                            y = 50f
+                        }
+
+                        textPaint.isFakeBoldText = true
+                        val nameStr = "${person.lastName} ${person.firstName} ${person.patronymic}".trim()
+                        canvas.drawText(nameStr, 50f, y, textPaint)
+                        
+                        textPaint.isFakeBoldText = false
+                        val dates = if (person.isDeceased) {
+                            "(${person.birthYear ?: "?"} — ${person.deathYear ?: "†"})"
+                        } else {
+                            "(р. ${person.birthYear ?: "?"})"
+                        }
+                        
+                        val metrics = textPaint.measureText(nameStr)
+                        canvas.drawText(dates, 50f + metrics + 10f, y, textPaint)
+                        
+                        y += 20f
+                        if (!person.biography.isNullOrBlank()) {
+                            textPaint.textSize = 10f
+                            textPaint.color = android.graphics.Color.DKGRAY
+                            val bio = if (person.biography!!.length > 80) person.biography!!.take(77) + "..." else person.biography
+                            canvas.drawText(bio!!, 60f, y, textPaint)
+                            y += 15f
+                        }
+                        textPaint.textSize = 12f
+                        textPaint.color = android.graphics.Color.BLACK
+                        y += 10f
+                    }
+
+                    pdfDocument.finishPage(page)
+                    
+                    contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        pdfDocument.writeTo(outputStream)
+                    }
+                    pdfDocument.close()
+                }
+                _statusMessage.value = "PDF отчет успешно создан!"
+            } catch (e: Exception) {
+                Log.e("GenealogyVM", "PDF Export failed", e)
+                _statusMessage.value = "Ошибка создания PDF: ${e.localizedMessage}"
+            }
+        }
     }
 
     fun updateTheme(theme: AppTheme) {
