@@ -85,13 +85,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            val viewModel: GenealogyViewModel = viewModel()
+            val themePreference by viewModel.appTheme.collectAsStateWithLifecycle()
+            
+            val darkTheme = when (themePreference) {
+                AppTheme.LIGHT -> false
+                AppTheme.DARK -> true
+                AppTheme.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            MyApplicationTheme(darkTheme = darkTheme) {
                 var showBranding by remember { mutableStateOf(true) }
 
                 if (showBranding) {
                     BrandingScreen(onFinished = { showBranding = false })
                 } else {
-                    MainScreen()
+                    MainScreen(viewModel = viewModel)
                 }
             }
         }
@@ -2906,6 +2915,7 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
     val context = LocalContext.current
     var selectedImportMode by remember { mutableStateOf(ImportMode.MERGE) }
     val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
+    val themePreference by viewModel.appTheme.collectAsStateWithLifecycle()
 
     // Backup Export File creator launcher
     val exportFileLauncher = rememberLauncherForActivityResult(
@@ -2938,6 +2948,37 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
+
+        // THEME SELECTION SECTION
+        Text("Оформление приложения", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Выберите тему оформления:", style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val themes = listOf(
+                        AppTheme.SYSTEM to "Системная",
+                        AppTheme.LIGHT to "Светлая",
+                        AppTheme.DARK to "Тёмная"
+                    )
+                    themes.forEach { (theme, label) ->
+                        FilterChip(
+                            selected = themePreference == theme,
+                            onClick = { viewModel.updateTheme(theme) },
+                            label = { Text(label) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider()
 
         Card(
             modifier = Modifier.fillMaxWidth(),

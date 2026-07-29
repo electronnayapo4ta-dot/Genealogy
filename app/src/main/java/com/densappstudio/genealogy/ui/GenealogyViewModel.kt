@@ -2,6 +2,7 @@ package com.densappstudio.genealogy.ui
 
 import android.app.Application
 import android.content.ContentResolver
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -31,6 +32,8 @@ enum class RelationFilter {
     NANNY_WET_NURSE,
     CLOSE_CIRCLE // Friends, Nannies, Wet Nurses
 }
+
+enum class AppTheme { LIGHT, DARK, SYSTEM }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GenealogyViewModel(application: Application) : AndroidViewModel(application) {
@@ -99,6 +102,12 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     // Status state for Import/Export
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage = _statusMessage.asStateFlow()
+
+    private val prefs = application.getSharedPreferences("genealogy_prefs", Context.MODE_PRIVATE)
+    private val _appTheme = MutableStateFlow(
+        AppTheme.valueOf(prefs.getString("app_theme", AppTheme.SYSTEM.name) ?: AppTheme.SYSTEM.name)
+    )
+    val appTheme = _appTheme.asStateFlow()
 
     private val _publicCollections = MutableStateFlow<List<PublicCollection>>(emptyList())
     val publicCollections = _publicCollections.asStateFlow()
@@ -620,6 +629,11 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun clearStatusMessage() {
         _statusMessage.value = null
+    }
+
+    fun updateTheme(theme: AppTheme) {
+        _appTheme.value = theme
+        prefs.edit().putString("app_theme", theme.name).apply()
     }
 }
 
