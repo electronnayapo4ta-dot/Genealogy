@@ -3053,6 +3053,70 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ABOUT SECTION
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "О Приложении",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFFD166) // Golden accent
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Genealogy Tree DB",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+
+            Text(
+                text = "Версия 1.0.0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.LightGray
+            )
+
+            Text(
+                text = "Релиз: 28 июля 2026",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.LightGray
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row {
+                Text(
+                    text = "Обратная связь: ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
+                )
+                Text(
+                    text = "densappstudio@yandex.ru",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF5BA9E0), // Blue link color
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:densappstudio@yandex.ru")
+                            putExtra(Intent.EXTRA_SUBJECT, "Genealogy Tree DB Feedback")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // No email app
+                        }
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // FOOTER
         Row(
             modifier = Modifier.fillMaxWidth(),
