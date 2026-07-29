@@ -639,68 +639,103 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     fun exportToPdf(contentResolver: ContentResolver, uri: Uri) {
         viewModelScope.launch {
             try {
-                val currentTree = activeTree.value ?: return@launch
-                val people = allPeople.value
-                val relationships = allRelationships.value
+                val currentTreeId = _activeTreeId.value
+                if (currentTreeId == null) {
+                    _statusMessage.value = "Ошибка: база не выбрана!"
+                    return@launch
+                }
+
+                val currentTree = repository.getTreeById(currentTreeId) ?: return@launch
+                val people = repository.getPeopleForTreeSuspend(currentTreeId)
+                val relationships = repository.allRelationships.first().filter { it.treeId == currentTreeId }
                 
+                if (people.isEmpty()) {
+                    _statusMessage.value = "Ошибка: в выбранной базе нет людей для отчета."
+                    return@launch
+                }
+
                 withContext(Dispatchers.IO) {
                     val pdfDocument = PdfDocument()
-                    val paint = Paint()
                     val textPaint = TextPaint()
                     
+                    // Group people by generations for a better tree-like report
+                    val generations = calculateGenerations(people, relationships)
+
                     // A4 size: 595 x 842 points
                     val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
                     var page = pdfDocument.startPage(pageInfo)
                     var canvas = page.canvas
-                    var y = 50f
+                    var y = 60f
 
                     // Title
                     textPaint.isFakeBoldText = true
-                    textPaint.textSize = 18f
-                    canvas.drawText("Отчет по роду: ${currentTree.name}", 50f, y, textPaint)
-                    y += 30f
+                    textPaint.textSize = 22f
+                    canvas.drawText("Генеалогический отчет: ${currentTree.name}", 50f, y, textPaint)
+                    y += 35f
                     
                     textPaint.isFakeBoldText = false
                     textPaint.textSize = 12f
+                    textPaint.color = android.graphics.Color.GRAY
                     canvas.drawText("Сформировано в приложении Genealogy Tree DB", 50f, y, textPaint)
-                    y += 40f
+                    y += 50f
+                    
+                    textPaint.color = android.graphics.Color.BLACK
 
-                    // Group by generations (reuse our logic)
-                    // Note: calculateGenerations is currently in MainActivity, but we can access it if we move it or duplicate for now
-                    // For the PDF report, let's just list people alphabetically with their full details as requested
-                    people.sortedBy { it.lastName }.forEach { person ->
-                        if (y > 780f) { // Page break logic
+                    generations.forEachIndexed { index, generation ->
+                        if (y > 750f) {
                             pdfDocument.finishPage(page)
                             page = pdfDocument.startPage(pageInfo)
                             canvas = page.canvas
-                            y = 50f
+                            y = 60f
                         }
 
+                        // Generation header
                         textPaint.isFakeBoldText = true
-                        val nameStr = "${person.lastName} ${person.firstName} ${person.patronymic}".trim()
-                        canvas.drawText(nameStr, 50f, y, textPaint)
+                        textPaint.textSize = 16f
+                        textPaint.color = android.graphics.Color.BLUE
+                        canvas.drawText("Поколение ${index + 1}", 50f, y, textPaint)
+                        y += 25f
                         
-                        textPaint.isFakeBoldText = false
-                        val dates = if (person.isDeceased) {
-                            "(${person.birthYear ?: "?"} — ${person.deathYear ?: "†"})"
-                        } else {
-                            "(р. ${person.birthYear ?: "?"})"
+                        generation.forEach { person ->
+                            if (y > 780f) {
+                                pdfDocument.finishPage(page)
+                                page = pdfDocument.startPage(pageInfo)
+                                canvas = page.canvas
+                                y = 60f
+                            }
+
+                            // Person row
+                            textPaint.isFakeBoldText = true
+                            textPaint.textSize = 13f
+                            textPaint.color = android.graphics.Color.BLACK
+                            
+                            val fullName = "${person.lastName} ${person.firstName} ${person.patronymic}".trim()
+                            canvas.drawText("• $fullName", 60f, y, textPaint)
+                            
+                            val dates = if (person.isDeceased) {
+                                " [${person.birthYear ?: "?"} — ${person.deathYear ?: "†"}]"
+                            } else {
+                                " [р. ${person.birthYear ?: "?"}]"
+                            }
+                            
+                            textPaint.isFakeBoldText = false
+                            val nameWidth = textPaint.measureText("• $fullName")
+                            canvas.drawText(dates, 60f + nameWidth + 5f, y, textPaint)
+                            
+                            y += 18f
+                            
+                            // Bio snippet
+                            if (!person.biography.isNullOrBlank()) {
+                                textPaint.textSize = 10f
+                                textPaint.color = android.graphics.Color.DKGRAY
+                                val cleanBio = person.biography!!.replace("\n", " ").trim()
+                                val bioText = if (cleanBio.length > 90) cleanBio.take(87) + "..." else cleanBio
+                                canvas.drawText("  $bioText", 75f, y, textPaint)
+                                y += 15f
+                            }
+                            y += 10f // Space between people
                         }
-                        
-                        val metrics = textPaint.measureText(nameStr)
-                        canvas.drawText(dates, 50f + metrics + 10f, y, textPaint)
-                        
-                        y += 20f
-                        if (!person.biography.isNullOrBlank()) {
-                            textPaint.textSize = 10f
-                            textPaint.color = android.graphics.Color.DKGRAY
-                            val bio = if (person.biography!!.length > 80) person.biography!!.take(77) + "..." else person.biography
-                            canvas.drawText(bio!!, 60f, y, textPaint)
-                            y += 15f
-                        }
-                        textPaint.textSize = 12f
-                        textPaint.color = android.graphics.Color.BLACK
-                        y += 10f
+                        y += 15f // Space between generations
                     }
 
                     pdfDocument.finishPage(page)
@@ -710,15 +745,14 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                     pdfDocument.close()
                 }
-                _statusMessage.value = "PDF отчет успешно создан!"
+                _statusMessage.value = "PDF отчет успешно создан (${people.size} чел.)"
             } catch (e: Exception) {
                 Log.e("GenealogyVM", "PDF Export failed", e)
                 _statusMessage.value = "Ошибка создания PDF: ${e.localizedMessage}"
             }
         }
     }
-
-    fun updateTheme(theme: AppTheme) {
+  fun updateTheme(theme: AppTheme) {
         _appTheme.value = theme
         prefs.edit().putString("app_theme", theme.name).apply()
     }
