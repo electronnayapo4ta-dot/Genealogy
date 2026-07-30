@@ -25,6 +25,10 @@ import android.graphics.pdf.PdfDocument
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.Layout
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.RectF
+import com.densappstudio.genealogy.R
 
 enum class LivingFilter { ALL, LIVING, DECEASED }
 enum class RelationFilter {
@@ -657,28 +661,94 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                 withContext(Dispatchers.IO) {
                     val pdfDocument = PdfDocument()
                     val textPaint = TextPaint()
+                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
                     
-                    // Group people by generations for a better tree-like report
                     val generations = calculateGenerations(people, relationships)
 
-                    // A4 size: 595 x 842 points
-                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+                    // --- PAGE 1: INTRODUCTORY PAGE ---
                     var page = pdfDocument.startPage(pageInfo)
                     var canvas = page.canvas
-                    var y = 60f
-
-                    // Title
+                    
+                    // Title on Intro Page
                     textPaint.isFakeBoldText = true
-                    textPaint.textSize = 22f
-                    canvas.drawText("Генеалогический отчет: ${currentTree.name}", 50f, y, textPaint)
-                    y += 35f
+                    textPaint.textSize = 28f
+                    textPaint.textAlign = Paint.Align.CENTER
+                    textPaint.color = android.graphics.Color.BLACK
+                    canvas.drawText(currentTree.name, 595f / 2, 120f, textPaint)
                     
+                    textPaint.textSize = 14f
                     textPaint.isFakeBoldText = false
-                    textPaint.textSize = 12f
                     textPaint.color = android.graphics.Color.GRAY
-                    canvas.drawText("Сформировано в приложении Genealogy Tree DB", 50f, y, textPaint)
-                    y += 50f
+                    canvas.drawText("История рода и генеалогические связи", 595f / 2, 145f, textPaint)
+
+                    // 1. Draw Decorative Tree Image (from resources)
+                    try {
+                        val treeBitmap = BitmapFactory.decodeResource(getApplication<Application>().resources, R.drawable.splash_genealogy)
+                        if (treeBitmap != null) {
+                            val treeSize = 240f
+                            val left = (595f - treeSize) / 2
+                            val top = 180f
+                            val rect = RectF(left, top, left + treeSize, top + treeSize)
+                            canvas.drawBitmap(treeBitmap, null, rect, Paint(Paint.FILTER_BITMAP_FLAG))
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PDF", "Failed to load decorative tree", e)
+                    }
                     
+                    // Find Founder (first person of first generation)
+                    val founder = generations.firstOrNull()?.firstOrNull()
+                    if (founder != null) {
+                        val yPhotoStart = 460f
+                        
+                        textPaint.color = android.graphics.Color.BLACK
+                        textPaint.textSize = 18f
+                        textPaint.isFakeBoldText = true
+                        canvas.drawText("Родоначальник:", 595f / 2, yPhotoStart, textPaint)
+                        
+                        textPaint.textSize = 20f
+                        canvas.drawText(founder.fullName, 595f / 2, yPhotoStart + 30f, textPaint)
+                        
+                        // Draw Founder Photo if available
+                        if (!founder.photoUri.isNullOrEmpty()) {
+                            try {
+                                val photoUri = Uri.parse(founder.photoUri)
+                                contentResolver.openInputStream(photoUri)?.use { inputStream ->
+                                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                                    if (bitmap != null) {
+                                        val photoSize = 140f
+                                        val left = (595f - photoSize) / 2
+                                        val top = yPhotoStart + 50f
+                                        val rect = RectF(left, top, left + photoSize, top + photoSize)
+                                        
+                                        // Draw centered photo with a small border
+                                        val paintPhoto = Paint(Paint.FILTER_BITMAP_FLAG)
+                                        canvas.drawBitmap(bitmap, null, rect, paintPhoto)
+                                        
+                                        paintPhoto.style = Paint.Style.STROKE
+                                        paintPhoto.strokeWidth = 2f
+                                        paintPhoto.color = android.graphics.Color.BLACK
+                                        canvas.drawRect(rect, paintPhoto)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("PDF", "Failed to load founder photo: ${founder.photoUri}", e)
+                            }
+                        }
+                    }
+                    
+                    // Small Footer on Intro Page
+                    textPaint.textSize = 10f
+                    textPaint.color = android.graphics.Color.LTGRAY
+                    canvas.drawText("Сформировано " + Calendar.getInstance().time.toString(), 595f / 2, 800f, textPaint)
+                    
+                    pdfDocument.finishPage(page)
+                    // --- END INTRO PAGE ---
+
+                    // --- SUBSEQUENT PAGES: DETAILED LIST ---
+                    page = pdfDocument.startPage(pageInfo)
+                    canvas = page.canvas
+                    var y = 60f
+                    textPaint.textAlign = Paint.Align.LEFT
                     textPaint.color = android.graphics.Color.BLACK
 
                     generations.forEachIndexed { index, generation ->
@@ -692,7 +762,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                         // Generation header
                         textPaint.isFakeBoldText = true
                         textPaint.textSize = 16f
-                        textPaint.color = android.graphics.Color.BLUE
+                        textPaint.color = android.graphics.Color.rgb(0, 102, 204) // Professional blue
                         canvas.drawText("Поколение ${index + 1}", 50f, y, textPaint)
                         y += 25f
                         
@@ -729,7 +799,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                                 textPaint.textSize = 10f
                                 textPaint.color = android.graphics.Color.DKGRAY
                                 val cleanBio = person.biography!!.replace("\n", " ").trim()
-                                val bioText = if (cleanBio.length > 90) cleanBio.take(87) + "..." else cleanBio
+                                val bioText = if (cleanBio.length > 95) cleanBio.take(92) + "..." else cleanBio
                                 canvas.drawText("  $bioText", 75f, y, textPaint)
                                 y += 15f
                             }
