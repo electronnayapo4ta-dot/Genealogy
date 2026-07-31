@@ -813,7 +813,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                                 canvas.drawRoundRect(rect, 5f, 5f, sPaint)
                                 
                                 val tPaint = TextPaint().apply { color = if (person.isDeceased) android.graphics.Color.WHITE else android.graphics.Color.BLACK; textSize = 8f; textAlign = Paint.Align.CENTER }
-                                val name = "${person.lastName} ${person.firstName.take(1)}.${person.patronymic?.take(1) ?: ""}"
+                                val name = "${person.lastName} ${person.firstName.take(1)}.${person.patronymic?.take(1)?.let { "$it." } ?: ""}"
                                 canvas.drawText(name, pos.x + nodeW / 2, pos.y + 25f, tPaint)
                                 val dates = if (person.isDeceased) "${person.birthYear ?: "?"}-${person.deathYear ?: "†"}" else "р.${person.birthYear ?: "?"}"
                                 canvas.drawText(dates, pos.x + nodeW / 2, pos.y + 45f, tPaint)
