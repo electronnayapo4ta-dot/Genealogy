@@ -55,7 +55,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.densappstudio.genealogy.data.*
 import com.densappstudio.genealogy.data.calculateGenerations
-import com.densappstudio.genealogy.data.getNodePosition
 import com.densappstudio.genealogy.ui.*
 import com.densappstudio.genealogy.ui.theme.MyApplicationTheme
 import androidx.compose.ui.draw.clipToBounds
@@ -584,20 +583,14 @@ fun VisualTreeView(
     val density = LocalDensity.current
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
-    // Pre-calculate centered positions in DP
-    val positions = remember(generations) {
-        val posMap = mutableMapOf<Long, Offset>()
-        generations.forEachIndexed { genIndex, layer ->
-            val layerWidth = layer.size * nodeWidth.value + (layer.size - 1) * horizontalGap.value
-            val startX = (screenWidth.value - layerWidth) / 2 
-            
-            layer.forEachIndexed { personIndex, person ->
-                val x = startX + personIndex * (nodeWidth.value + horizontalGap.value)
-                val y = 50f + genIndex * (nodeHeight.value + verticalGap.value)
-                posMap[person.id] = Offset(x, y)
-            }
-        }
-        posMap
+    val treeLayout = remember(generations) {
+        TreeLayout(
+            generations = generations,
+            nodeWidth = 140f, // Using logical units here, we'll convert to Px later
+            nodeHeight = 60f,
+            horizontalGap = 40f,
+            verticalGap = 100f
+        )
     }
 
     Box(
@@ -609,17 +602,22 @@ fun VisualTreeView(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             with(density) {
-                val nodeW = nodeWidth.toPx()
-                val nodeH = nodeHeight.toPx()
+                val nodeW = 140.dp.toPx()
+                val nodeH = 60.dp.toPx()
+                val horizontalG = 40.dp.toPx()
+                val verticalG = 100.dp.toPx()
+
+                val centerX = size.width / 2
+                val topPadding = 50.dp.toPx()
 
                 val spouseCenters = mutableMapOf<Pair<Long, Long>, Offset>()
 
                 // Helper to get pixel position
                 fun getPixelPos(id: Long): Offset? {
-                    val dpPos = positions[id] ?: return null
+                    val pos = treeLayout.getPosition(id) ?: return null
                     return Offset(
-                        (dpPos.x.dp.toPx()) * scale + offset.x,
-                        (dpPos.y.dp.toPx()) * scale + offset.y
+                        (pos.x.dp.toPx() + (size.width - treeLayout.totalWidth.dp.toPx()) / 2) * scale + offset.x,
+                        (pos.y.dp.toPx() + topPadding) * scale + offset.y
                     )
                 }
 
@@ -628,24 +626,24 @@ fun VisualTreeView(
                     val p1 = getPixelPos(rel.personId1)
                     val p2 = getPixelPos(rel.personId2)
                     if (p1 != null && p2 != null) {
-                        // Ensure nodes are adjacent before drawing spouse line to avoid crossing
+                        // Ensure nodes are adjacent
                         val gen = generations.find { layer -> layer.any { it.id == rel.personId1 } }
                         val idx1 = gen?.indexOfFirst { it.id == rel.personId1 } ?: -1
                         val idx2 = gen?.indexOfFirst { it.id == rel.personId2 } ?: -1
                         
                         if (Math.abs(idx1 - idx2) == 1) {
-                            val start = if (p1.x < p2.x) p1.copy(x = p1.x + nodeW) else p1
-                            val end = if (p2.x < p1.x) p2.copy(x = p2.x + nodeW) else p2
+                            val start = if (p1.x < p2.x) p1.copy(x = p1.x + nodeW * scale) else p1
+                            val end = if (p2.x < p1.x) p2.copy(x = p2.x + nodeW * scale) else p2
                             
                             drawLine(
                                 color = Color(0xFFFFD166).copy(alpha = 0.8f),
-                                start = start.copy(y = start.y + nodeH / 2),
-                                end = end.copy(y = end.y + nodeH / 2),
+                                start = start.copy(y = start.y + (nodeH / 2) * scale),
+                                end = end.copy(y = end.y + (nodeH / 2) * scale),
                                 strokeWidth = 3.dp.toPx() * scale
                             )
                             
-                            val midX = (p1.x + p2.x + nodeW) / 2
-                            spouseCenters[Pair(minOf(rel.personId1, rel.personId2), maxOf(rel.personId1, rel.personId2))] = Offset(midX, p1.y + nodeH / 2)
+                            val midX = (p1.x + p2.x + nodeW * scale) / 2
+                            spouseCenters[Pair(minOf(rel.personId1, rel.personId2), maxOf(rel.personId1, rel.personId2))] = Offset(midX, p1.y + (nodeH / 2) * scale)
                         }
                     }
                 }
@@ -656,7 +654,7 @@ fun VisualTreeView(
 
                 childToParents.forEach { (childId, parentRels) ->
                     val cPos = getPixelPos(childId) ?: return@forEach
-                    val childTop = cPos.copy(x = cPos.x + nodeW / 2)
+                    val childTop = cPos.copy(x = cPos.x + (nodeW / 2) * scale)
                     
                     val parentIds = parentRels.map { it.personId1 }
                     var sourcePoint: Offset? = null
@@ -674,7 +672,7 @@ fun VisualTreeView(
                     
                     if (sourcePoint == null && parentIds.isNotEmpty()) {
                         getPixelPos(parentIds[0])?.let { pPos ->
-                            sourcePoint = Offset(pPos.x + nodeW / 2, pPos.y + nodeH)
+                            sourcePoint = Offset(pPos.x + (nodeW / 2) * scale, pPos.y + nodeH * scale)
                         }
                     }
 
@@ -697,34 +695,37 @@ fun VisualTreeView(
         }
 
         // 3. Draw Nodes
-        positions.forEach { (id, pos) ->
-            val person = people.find { it.id == id } ?: return@forEach
-            val pixelX = with(density) { pos.x.dp.toPx() * scale + offset.x }
-            val pixelY = with(density) { pos.y.dp.toPx() * scale + offset.y }
+        val screenWidthPx = with(density) { screenWidth.toPx() }
+        generations.forEachIndexed { genIndex, layer ->
+            layer.forEach { person ->
+                val pos = treeLayout.getPosition(person.id) ?: return@forEach
+                val pixelX = with(density) { (pos.x.dp.toPx() + (screenWidthPx - treeLayout.totalWidth.dp.toPx()) / 2) * scale + offset.x }
+                val pixelY = with(density) { (pos.y.dp.toPx() + 50.dp.toPx()) * scale + offset.y }
 
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
-                    .size(nodeWidth * scale, nodeHeight * scale)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (person.isDeceased) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.primaryContainer)
-                    .border(1.dp, if (person.isDeceased) Color.Black else MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                    .clickable { onPersonClick(person.id) },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = person.lastName,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
-                        color = if (person.isDeceased) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = person.firstName,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
-                        color = if (person.isDeceased) Color.LightGray else MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
+                        .size(140.dp * scale, 60.dp * scale)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (person.isDeceased) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.primaryContainer)
+                        .border(1.dp, if (person.isDeceased) Color.Black else MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                        .clickable { onPersonClick(person.id) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = person.lastName,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
+                            color = if (person.isDeceased) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = person.firstName,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
+                            color = if (person.isDeceased) Color.LightGray else MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

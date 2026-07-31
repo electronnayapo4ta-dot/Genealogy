@@ -28,6 +28,7 @@ import android.text.Layout
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.RectF
+import androidx.compose.ui.geometry.Offset
 import com.densappstudio.genealogy.R
 
 enum class LivingFilter { ALL, LIVING, DECEASED }
@@ -667,7 +668,10 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                 withContext(Dispatchers.IO) {
                     val pdfDocument = PdfDocument()
                     val textPaint = TextPaint()
-                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+                    val pagePaint = Paint()
+                    val pageW = 595
+                    val pageH = 842
+                    val pageInfo = PdfDocument.PageInfo.Builder(pageW, pageH, 1).create()
                     
                     val generations = calculateGenerations(people, relationships)
 
@@ -675,37 +679,28 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     var page = pdfDocument.startPage(pageInfo)
                     var canvas = page.canvas
                     
-                    // Title on Intro Page
                     textPaint.isFakeBoldText = true
                     textPaint.textSize = 28f
                     textPaint.textAlign = Paint.Align.CENTER
                     textPaint.color = android.graphics.Color.BLACK
-                    canvas.drawText(currentTree.name, 595f / 2, 120f, textPaint)
+                    canvas.drawText(currentTree.name, pageW / 2f, 120f, textPaint)
                     
                     textPaint.textSize = 14f
                     textPaint.isFakeBoldText = false
                     textPaint.color = android.graphics.Color.GRAY
-                    canvas.drawText("История рода и генеалогические связи", 595f / 2, 145f, textPaint)
+                    canvas.drawText("История рода и генеалогические связи", pageW / 2f, 145f, textPaint)
 
-                    // 1. Draw Decorative Tree Image (from resources)
                     try {
                         val treeBitmap = BitmapFactory.decodeResource(getApplication<Application>().resources, R.drawable.splash_genealogy)
                         if (treeBitmap != null) {
                             val treeSize = 240f
-                            val left = (595f - treeSize) / 2
-                            val top = 180f
-                            val rect = RectF(left, top, left + treeSize, top + treeSize)
+                            val rect = RectF((pageW - treeSize) / 2f, 180f, (pageW + treeSize) / 2f, 180f + treeSize)
                             canvas.drawBitmap(treeBitmap, null, rect, Paint(Paint.FILTER_BITMAP_FLAG))
                         }
-                    } catch (e: Exception) {
-                        Log.e("PDF", "Failed to load decorative tree", e)
-                    }
+                    } catch (e: Exception) {}
                     
-                    // Find Founder - Either manually selected or intelligent default
                     val firstGen = generations.firstOrNull() ?: emptyList()
-                    val founder = if (founderId != null) {
-                        people.find { it.id == founderId }
-                    } else {
+                    val founder = if (founderId != null) people.find { it.id == founderId } else {
                         firstGen.find { !it.photoUri.isNullOrEmpty() } 
                             ?: firstGen.minByOrNull { it.birthYear ?: Int.MAX_VALUE }
                             ?: firstGen.find { it.gender == "MALE" }
@@ -713,114 +708,158 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     }
 
                     if (founder != null) {
-                        val yPhotoStart = 460f
-                        
+                        val yStart = 460f
                         textPaint.color = android.graphics.Color.BLACK
                         textPaint.textSize = 18f
                         textPaint.isFakeBoldText = true
-                        canvas.drawText("Родоначальник:", 595f / 2, yPhotoStart, textPaint)
+                        canvas.drawText("Родоначальник:", pageW / 2f, yStart, textPaint)
+                        canvas.drawText(founder.fullName, pageW / 2f, yStart + 30f, textPaint)
                         
-                        textPaint.textSize = 20f
-                        canvas.drawText(founder.fullName, 595f / 2, yPhotoStart + 30f, textPaint)
-                        
-                        // Draw Founder Photo if available
                         if (!founder.photoUri.isNullOrEmpty()) {
                             try {
                                 val photoUri = Uri.parse(founder.photoUri)
                                 contentResolver.openInputStream(photoUri)?.use { inputStream ->
                                     val bitmap = BitmapFactory.decodeStream(inputStream)
                                     if (bitmap != null) {
-                                        val photoSize = 140f
-                                        val left = (595f - photoSize) / 2
-                                        val top = yPhotoStart + 50f
-                                        val rect = RectF(left, top, left + photoSize, top + photoSize)
-                                        
-                                        // Draw centered photo with a small border
-                                        val paintPhoto = Paint(Paint.FILTER_BITMAP_FLAG)
-                                        canvas.drawBitmap(bitmap, null, rect, paintPhoto)
-                                        
-                                        paintPhoto.style = Paint.Style.STROKE
-                                        paintPhoto.strokeWidth = 2f
-                                        paintPhoto.color = android.graphics.Color.BLACK
-                                        canvas.drawRect(rect, paintPhoto)
+                                        val pSize = 140f
+                                        val rect = RectF((pageW - pSize) / 2f, yStart + 50f, (pageW + pSize) / 2f, yStart + 50f + pSize)
+                                        canvas.drawBitmap(bitmap, null, rect, Paint(Paint.FILTER_BITMAP_FLAG))
+                                        val border = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 2f; color = android.graphics.Color.BLACK }
+                                        canvas.drawRect(rect, border)
                                     }
                                 }
-                            } catch (e: Exception) {
-                                Log.e("PDF", "Failed to load founder photo: ${founder.photoUri}", e)
-                            }
+                            } catch (e: Exception) {}
                         }
                     }
                     
-                    // Small Footer on Intro Page
                     textPaint.textSize = 10f
                     textPaint.color = android.graphics.Color.LTGRAY
-                    canvas.drawText("Сформировано " + Calendar.getInstance().time.toString(), 595f / 2, 800f, textPaint)
-                    
+                    canvas.drawText("Сформировано " + Calendar.getInstance().time.toString(), pageW / 2f, 800f, textPaint)
                     pdfDocument.finishPage(page)
-                    // --- END INTRO PAGE ---
 
-                    // --- SUBSEQUENT PAGES: DETAILED LIST ---
+                    // --- SECTION: VISUAL GRAPH (MULTI-PAGE) ---
+                    val nodeW = 120f
+                    val nodeH = 60f
+                    val gapH = 40f
+                    val gapV = 80f
+                    val margin = 50f
+                    
+                    val treeLayout = TreeLayout(generations, nodeW, nodeH, gapH, gapV)
+                    
+                    val contentW = treeLayout.totalWidth
+                    val contentH = treeLayout.totalHeight
+                    
+                    val usableW = pageW - (margin * 2)
+                    val usableH = pageH - (margin * 2) - 40 // room for labels
+                    
+                    val horizontalPages = Math.ceil((contentW / usableW).toDouble()).toInt().coerceAtLeast(1)
+                    val verticalPages = Math.ceil((contentH / usableH).toDouble()).toInt().coerceAtLeast(1)
+
+                    for (vy in 0 until verticalPages) {
+                        for (hx in 0 until horizontalPages) {
+                            page = pdfDocument.startPage(pageInfo)
+                            canvas = page.canvas
+                            
+                            canvas.save()
+                            canvas.translate(margin - (hx * usableW), margin - (vy * usableH) + 20f)
+                            
+                            // Draw Connections
+                            val spouseCenters = mutableMapOf<Pair<Long, Long>, Offset>()
+                            relationships.filter { it.type == "SPOUSE" }.forEach { rel ->
+                                val p1Pos = treeLayout.getPosition(rel.personId1)
+                                val p2Pos = treeLayout.getPosition(rel.personId2)
+                                if (p1Pos != null && p2Pos != null) {
+                                    val start = if (p1Pos.x < p2Pos.x) p1Pos.copy(x = p1Pos.x + nodeW) else p1Pos
+                                    val end = if (p2Pos.x < p1Pos.x) p2Pos.copy(x = p2Pos.x + nodeW) else p2Pos
+                                    val linePaint = Paint().apply { color = android.graphics.Color.rgb(255, 210, 102); strokeWidth = 2f; alpha = 180 }
+                                    canvas.drawLine(start.x, start.y + nodeH / 2, end.x, end.y + nodeH / 2, linePaint)
+                                    spouseCenters[Pair(minOf(rel.personId1, rel.personId2), maxOf(rel.personId1, rel.personId2))] = Offset((p1Pos.x + p2Pos.x + nodeW) / 2, p1Pos.y + nodeH / 2)
+                                }
+                            }
+                            
+                            val childToParents = relationships.filter { it.type == "PARENT" || it.type == "PARENT_ADOPTED" }.groupBy { it.personId2 }
+                            childToParents.forEach { (childId, parentRels) ->
+                                val cPos = treeLayout.getPosition(childId) ?: return@forEach
+                                val parentIds = parentRels.map { it.personId1 }
+                                var sp: Offset? = null
+                                if (parentIds.size >= 2) {
+                                    for (i in 0 until parentIds.size) {
+                                        for (j in i + 1 until parentIds.size) {
+                                            val key = Pair(minOf(parentIds[i], parentIds[j]), maxOf(parentIds[i], parentIds[j]))
+                                            sp = spouseCenters[key]
+                                            if (sp != null) break
+                                        }
+                                        if (sp != null) break
+                                    }
+                                }
+                                if (sp == null && parentIds.isNotEmpty()) {
+                                    treeLayout.getPosition(parentIds[0])?.let { pPos -> sp = Offset(pPos.x + nodeW / 2, pPos.y + nodeH) }
+                                }
+                                sp?.let { s ->
+                                    val midY = (s.y + cPos.y) / 2
+                                    val connPaint = Paint().apply { color = android.graphics.Color.GRAY; strokeWidth = 1.5f; style = Paint.Style.STROKE }
+                                    val path = android.graphics.Path().apply { moveTo(s.x, s.y); lineTo(s.x, midY); lineTo(cPos.x + nodeW / 2, midY); lineTo(cPos.x + nodeW / 2, cPos.y) }
+                                    canvas.drawPath(path, connPaint)
+                                }
+                            }
+
+                            // Draw Nodes
+                            people.forEach { person ->
+                                val pos = treeLayout.getPosition(person.id) ?: return@forEach
+                                val rect = RectF(pos.x, pos.y, pos.x + nodeW, pos.y + nodeH)
+                                val bPaint = Paint().apply { color = if (person.isDeceased) android.graphics.Color.rgb(40, 40, 40) else android.graphics.Color.rgb(240, 245, 255) }
+                                canvas.drawRoundRect(rect, 5f, 5f, bPaint)
+                                val sPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 1f; color = android.graphics.Color.BLACK }
+                                canvas.drawRoundRect(rect, 5f, 5f, sPaint)
+                                
+                                val tPaint = TextPaint().apply { color = if (person.isDeceased) android.graphics.Color.WHITE else android.graphics.Color.BLACK; textSize = 8f; textAlign = Paint.Align.CENTER }
+                                val name = "${person.lastName} ${person.firstName.take(1)}.${person.patronymic?.take(1) ?: ""}"
+                                canvas.drawText(name, pos.x + nodeW / 2, pos.y + 25f, tPaint)
+                                val dates = if (person.isDeceased) "${person.birthYear ?: "?"}-${person.deathYear ?: "†"}" else "р.${person.birthYear ?: "?"}"
+                                canvas.drawText(dates, pos.x + nodeW / 2, pos.y + 45f, tPaint)
+                            }
+                            
+                            canvas.restore()
+                            
+                            // Draw cut/glue markings and page labels
+                            val markPaint = Paint().apply { color = android.graphics.Color.RED; strokeWidth = 1f; style = Paint.Style.STROKE; pathEffect = android.graphics.DashPathEffect(floatArrayOf(5f, 5f), 0f) }
+                            if (hx > 0) { canvas.drawLine(margin, margin, margin, pageH - margin, markPaint); canvas.drawText("Линия склейки (слева)", margin + 5, pageH / 2f, TextPaint().apply { textSize = 8f; color = android.graphics.Color.RED }) }
+                            if (hx < horizontalPages - 1) { canvas.drawLine(pageW - margin, margin, pageW - margin, pageH - margin, markPaint); canvas.drawText("Линия отреза (справа)", pageW - margin - 80, pageH / 2f, TextPaint().apply { textSize = 8f; color = android.graphics.Color.RED }) }
+                            
+                            textPaint.textSize = 10f; textPaint.color = android.graphics.Color.BLACK; textPaint.textAlign = Paint.Align.CENTER
+                            canvas.drawText("Схема древа: Стр ${vy + 1}-${hx + 1} (${if (hx == 0 && horizontalPages == 1) "Центр" else if (hx == 0) "Лево" else if (hx == horizontalPages - 1) "Право" else "Центр"})", pageW / 2f, 30f, textPaint)
+                            
+                            pdfDocument.finishPage(page)
+                        }
+                    }
+
+                    // --- SECTION: DETAILED TEXT LIST (EXISTING) ---
                     page = pdfDocument.startPage(pageInfo)
                     canvas = page.canvas
-                    var y = 60f
+                    var yList = 60f
                     textPaint.textAlign = Paint.Align.LEFT
                     textPaint.color = android.graphics.Color.BLACK
 
-                    generations.forEachIndexed { index, generation ->
-                        if (y > 750f) {
-                            pdfDocument.finishPage(page)
-                            page = pdfDocument.startPage(pageInfo)
-                            canvas = page.canvas
-                            y = 60f
-                        }
-
-                        // Generation header
-                        textPaint.isFakeBoldText = true
-                        textPaint.textSize = 16f
-                        textPaint.color = android.graphics.Color.rgb(0, 102, 204) // Professional blue
-                        canvas.drawText("Поколение ${index + 1}", 50f, y, textPaint)
-                        y += 25f
-                        
+                    generations.forEachIndexed { idx, generation ->
+                        if (yList > 750f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yList = 60f }
+                        textPaint.isFakeBoldText = true; textPaint.textSize = 16f; textPaint.color = android.graphics.Color.rgb(0, 102, 204); canvas.drawText("Поколение ${idx + 1}", 50f, yList, textPaint); yList += 25f
                         generation.forEach { person ->
-                            if (y > 780f) {
-                                pdfDocument.finishPage(page)
-                                page = pdfDocument.startPage(pageInfo)
-                                canvas = page.canvas
-                                y = 60f
-                            }
-
-                            // Person row
-                            textPaint.isFakeBoldText = true
-                            textPaint.textSize = 13f
-                            textPaint.color = android.graphics.Color.BLACK
-                            
-                            val fullName = "${person.lastName} ${person.firstName} ${person.patronymic}".trim()
-                            canvas.drawText("• $fullName", 60f, y, textPaint)
-                            
-                            val dates = if (person.isDeceased) {
-                                " [${person.birthYear ?: "?"} — ${person.deathYear ?: "†"}]"
-                            } else {
-                                " [р. ${person.birthYear ?: "?"}]"
-                            }
-                            
-                            textPaint.isFakeBoldText = false
-                            val nameWidth = textPaint.measureText("• $fullName")
-                            canvas.drawText(dates, 60f + nameWidth + 5f, y, textPaint)
-                            
-                            y += 18f
-                            
+                            if (yList > 780f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yList = 60f }
+                            textPaint.isFakeBoldText = true; textPaint.textSize = 13f; textPaint.color = android.graphics.Color.BLACK; val fn = "${person.lastName} ${person.firstName} ${person.patronymic}".trim(); canvas.drawText("• $fn", 60f, yList, textPaint)
+                            val dt = if (person.isDeceased) " [${person.birthYear ?: "?"} — ${person.deathYear ?: "†"}]" else " [р. ${person.birthYear ?: "?"}]"
+                            textPaint.isFakeBoldText = false; val nw = textPaint.measureText("• $fn"); canvas.drawText(dt, 60f + nw + 5f, yList, textPaint); yList += 18f
                             // Bio snippet
                             if (!person.biography.isNullOrBlank()) {
                                 textPaint.textSize = 10f
                                 textPaint.color = android.graphics.Color.DKGRAY
                                 val cleanBio = person.biography!!.replace("\n", " ").trim()
                                 val bioText = if (cleanBio.length > 95) cleanBio.take(92) + "..." else cleanBio
-                                canvas.drawText("  $bioText", 75f, y, textPaint)
-                                y += 15f
+                                canvas.drawText("  $bioText", 75f, yList, textPaint)
+                                yList += 15f
                             }
-                            y += 10f // Space between people
+                            yList += 10f // Space between people
                         }
-                        y += 15f // Space between generations
+                        yList += 15f // Space between generations
                     }
 
                     pdfDocument.finishPage(page)

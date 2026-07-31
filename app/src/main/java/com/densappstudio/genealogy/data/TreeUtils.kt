@@ -1,7 +1,6 @@
 package com.densappstudio.genealogy.data
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.dp
 
 fun calculateGenerations(people: List<Person>, relationships: List<Relationship>): List<List<Person>> {
     val personToLevel = mutableMapOf<Long, Int>()
@@ -96,22 +95,44 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
     return sortedGenerations.filter { it.isNotEmpty() }
 }
 
-fun getNodePosition(
-    person: Person, 
-    generations: List<List<Person>>, 
-    nodeW: Float, 
-    nodeH: Float, 
-    gapH: Float, 
-    gapV: Float
-): Offset {
-    generations.forEachIndexed { genIndex, layer ->
-        val personIndex = layer.indexOfFirst { it.id == person.id }
-        if (personIndex != -1) {
-            return Offset(
-                personIndex * (nodeW + gapH) + 50.dp.value * 2.5f, // Manual offset padding
-                genIndex * (nodeH + gapV) + 50.dp.value * 2.5f
-            )
+/**
+ * Shared logic for calculating node positions in a grid-like layout.
+ */
+class TreeLayout(
+    val generations: List<List<Person>>,
+    val nodeWidth: Float,
+    val nodeHeight: Float,
+    val horizontalGap: Float,
+    val verticalGap: Float,
+    val centerX: Float = 0f,
+    val topPadding: Float = 0f
+) {
+    private val positions = mutableMapOf<Long, Offset>()
+    val totalWidth: Float
+    val totalHeight: Float
+
+    init {
+        var maxWidth = 0f
+        generations.forEach { layer ->
+            val layerWidth = layer.size * nodeWidth + (layer.size - 1) * horizontalGap
+            if (layerWidth > maxWidth) maxWidth = layerWidth
+        }
+        totalWidth = maxWidth
+        totalHeight = generations.size * nodeHeight + (generations.size - 1) * verticalGap
+
+        generations.forEachIndexed { genIndex, layer ->
+            val layerWidth = layer.size * nodeWidth + (layer.size - 1) * horizontalGap
+            val startX = (totalWidth - layerWidth) / 2 // Center within total width
+            
+            layer.forEachIndexed { personIndex, person ->
+                val x = startX + personIndex * (nodeWidth + horizontalGap)
+                val y = genIndex * (nodeHeight + verticalGap)
+                positions[person.id] = Offset(x, y)
+            }
         }
     }
-    return Offset.Zero
+
+    fun getPosition(personId: Long): Offset? {
+        return positions[personId]
+    }
 }
