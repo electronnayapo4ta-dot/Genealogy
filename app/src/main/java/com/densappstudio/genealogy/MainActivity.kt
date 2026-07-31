@@ -1583,6 +1583,7 @@ fun EditPersonScreen(
                             } else {
                                 val savedPerson = Person(
                                     id = person?.id ?: 0L,
+                                    treeId = person?.treeId ?: 0L, // ВАЖНО: сохраняем привязку к роду
                                     firstName = firstName.trim(),
                                     lastName = lastName.trim(),
                                     patronymic = patronymic.trim(),
@@ -2224,6 +2225,7 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
     var treeToEdit by remember { mutableStateOf<GenealogyTree?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(false) }
+    var treeToDelete by remember { mutableStateOf<GenealogyTree?>(null) }
 
     val collectionsSourceUrl = "https://github.com/electronnayapo4ta-dot/Genealogy/tree/main/collections"
 
@@ -2308,7 +2310,7 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
                     tree = tree,
                     isActive = tree.id == activeTreeId,
                     onClick = { viewModel.setActiveTree(tree.id) },
-                    onDelete = { viewModel.deleteTree(tree) },
+                    onDelete = { treeToDelete = tree },
                     onRename = {
                         treeToEdit = tree
                         showRenameDialog = true
@@ -2434,6 +2436,7 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
     }
 
     if (showImportDialog && selectedPublicCollection != null) {
+        var importAsNew by remember { mutableStateOf(false) }
         var importMode by remember { mutableStateOf(ImportMode.MERGE) }
 
         AlertDialog(
@@ -2441,37 +2444,57 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
             title = { Text("Загрузить базу: ${selectedPublicCollection!!.title}") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Выберите режим импорта в активную базу (${localTrees.find { it.id == activeTreeId }?.name}):")
-                    
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ImportModeOption(
-                            title = "Слияние (Merge)",
-                            description = "Добавить только новых людей",
-                            selected = importMode == ImportMode.MERGE,
-                            onClick = { importMode = ImportMode.MERGE }
-                        )
-                        ImportModeOption(
-                            title = "Обновление (Update)",
-                            description = "Обновить существующих и добавить новых",
-                            selected = importMode == ImportMode.UPDATE,
-                            onClick = { importMode = ImportMode.UPDATE }
-                        )
-                        ImportModeOption(
-                            title = "Замещение (Replace)",
-                            description = "ОЧИСТИТЬ ТЕКУЩУЮ базу и загрузить эту",
-                            selected = importMode == ImportMode.REPLACE,
-                            isWarning = true,
-                            onClick = { importMode = ImportMode.REPLACE }
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { importAsNew = !importAsNew }
+                    ) {
+                        Checkbox(checked = importAsNew, onCheckedChange = { importAsNew = it })
+                        Text("Создать как НОВУЮ базу рода", fontWeight = FontWeight.Bold)
+                    }
+
+                    HorizontalDivider()
+
+                    if (!importAsNew) {
+                        Text("Режим импорта в активную базу (${localTrees.find { it.id == activeTreeId }?.name}):")
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ImportModeOption(
+                                title = "Слияние (Merge)",
+                                description = "Добавить только новых людей",
+                                selected = importMode == ImportMode.MERGE,
+                                onClick = { importMode = ImportMode.MERGE }
+                            )
+                            ImportModeOption(
+                                title = "Обновление (Update)",
+                                description = "Обновить существующих и добавить новых",
+                                selected = importMode == ImportMode.UPDATE,
+                                onClick = { importMode = ImportMode.UPDATE }
+                            )
+                            ImportModeOption(
+                                title = "Замещение (Replace)",
+                                description = "ОЧИСТИТЬ ТЕКУЩУЮ базу и назвать её '${selectedPublicCollection!!.title}'",
+                                selected = importMode == ImportMode.REPLACE,
+                                isWarning = true,
+                                onClick = { importMode = ImportMode.REPLACE }
+                            )
+                        }
+                    } else {
+                        Text("Будет создана новая независимая база данных с названием '${selectedPublicCollection!!.title}'. Ваши текущие деревья не пострадают.")
                     }
                 }
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.importFromUrl(selectedPublicCollection!!.downloadUrl, importMode)
+                    viewModel.importFromUrl(
+                        url = selectedPublicCollection!!.downloadUrl, 
+                        mode = if (importAsNew) ImportMode.REPLACE else importMode,
+                        createNewTree = importAsNew,
+                        treeName = selectedPublicCollection!!.title,
+                        treeDesc = selectedPublicCollection!!.description
+                    )
                     showImportDialog = false
                 }) {
-                    Text("Загрузить")
+                    Text(if (importAsNew) "Создать и загрузить" else "Загрузить")
                 }
             },
             dismissButton = {
@@ -2484,6 +2507,30 @@ fun LibraryTabScreen(viewModel: GenealogyViewModel) {
 
     if (showGuideDialog) {
         ContributionGuideDialog(onDismiss = { showGuideDialog = false })
+    }
+
+    if (treeToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { treeToDelete = null },
+            title = { Text("Удалить базу данных?") },
+            text = { Text("Вы собираетесь удалить базу '${treeToDelete!!.name}'. Все записи о людях и связях этого рода будут удалены навсегда. Это действие необратимо.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteTree(treeToDelete!!)
+                        treeToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Удалить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { treeToDelete = null }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 }
 
@@ -2806,6 +2853,12 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
     var selectedImportMode by remember { mutableStateOf(ImportMode.MERGE) }
     val activeTree by viewModel.activeTree.collectAsStateWithLifecycle()
     val themePreference by viewModel.appTheme.collectAsStateWithLifecycle()
+    val allPeople by viewModel.allPeople.collectAsStateWithLifecycle()
+    val allRelationships by viewModel.allRelationships.collectAsStateWithLifecycle()
+
+    var showPdfFounderDialog by remember { mutableStateOf(false) }
+    var manualFounderId by remember { mutableStateOf<Long?>(null) }
+    var showPersonPickerForPdf by remember { mutableStateOf(false) }
 
     // Backup Export File creator launcher
     val exportFileLauncher = rememberLauncherForActivityResult(
@@ -2830,7 +2883,7 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
         contract = ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri: Uri? ->
         uri?.let {
-            viewModel.exportToPdf(context.contentResolver, it)
+            viewModel.exportToPdf(context.contentResolver, it, manualFounderId)
         }
     }
 
@@ -2927,7 +2980,9 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
 
                 OutlinedButton(
                     onClick = {
-                        exportPdfLauncher.launch("genealogy_report.pdf")
+                        // Reset selection and show dialog
+                        manualFounderId = null
+                        showPdfFounderDialog = true
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -3188,6 +3243,104 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
         }
         
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    // PDF Founder Selection Dialog
+    if (showPdfFounderDialog) {
+        val gens = remember(allPeople, allRelationships) { calculateGenerations(allPeople, allRelationships) }
+        val defaultFounder = remember(gens) {
+            val firstGen = gens.firstOrNull() ?: emptyList()
+            firstGen.find { !it.photoUri.isNullOrEmpty() } 
+                ?: firstGen.minByOrNull { it.birthYear ?: Int.MAX_VALUE }
+                ?: firstGen.firstOrNull()
+        }
+        val displayedFounder = if (manualFounderId != null) allPeople.find { it.id == manualFounderId } else defaultFounder
+
+        AlertDialog(
+            onDismissRequest = { showPdfFounderDialog = false },
+            title = { Text("Настройка PDF отчета") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Выберите родоначальника, который будет на обложке отчета:")
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(40.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(displayedFounder?.fullName ?: "Не определен", fontWeight = FontWeight.Bold)
+                                Text(
+                                    if (manualFounderId == null) "Выбран автоматически" else "Выбран вручную",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                            TextButton(onClick = { showPersonPickerForPdf = true }) {
+                                Text("Изменить")
+                            }
+                        }
+                    }
+                    Text(
+                        "Отчет будет построен на основе поколений, начиная от этого человека.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (manualFounderId == null) manualFounderId = defaultFounder?.id
+                    showPdfFounderDialog = false
+                    exportPdfLauncher.launch("genealogy_report.pdf")
+                }) {
+                    Text("Создать PDF")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPdfFounderDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+
+    if (showPersonPickerForPdf) {
+        Dialog(onDismissRequest = { showPersonPickerForPdf = false }) {
+            Card(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.7f),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Выберите основателя рода", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(allPeople.sortedBy { it.lastName }) { person ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        manualFounderId = person.id
+                                        showPersonPickerForPdf = false
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(person.fullName)
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                    TextButton(onClick = { showPersonPickerForPdf = false }, modifier = Modifier.align(Alignment.End)) {
+                        Text("Закрыть")
+                    }
+                }
+            }
+        }
     }
 }
 

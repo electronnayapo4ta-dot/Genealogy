@@ -415,7 +415,8 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                 return@launch
             }
 
-            val personWithTree = if (person.treeId == 0L || person.id == 0L) {
+            // Ensure we never lose the tree assignment
+            val personWithTree = if (person.treeId == 0L) {
                 person.copy(treeId = currentTreeId)
             } else person
 
@@ -518,7 +519,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val okHttpClient = OkHttpClient()
 
-    fun importFromUrl(url: String, mode: ImportMode, createNewTree: Boolean = false, treeName: String? = null) {
+    fun importFromUrl(url: String, mode: ImportMode, createNewTree: Boolean = false, treeName: String? = null, treeDesc: String? = null) {
         viewModelScope.launch {
             try {
                 _statusMessage.value = "Загрузка данных..."
@@ -536,8 +537,13 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                 }
 
                 if (createNewTree && treeName != null) {
-                    val newTreeId = repository.insertTree(GenealogyTree(name = treeName))
+                    val newTreeId = repository.insertTree(GenealogyTree(name = treeName, description = treeDesc ?: ""))
                     setActiveTree(newTreeId)
+                } else if (mode == ImportMode.REPLACE && treeName != null) {
+                    // Rename current tree to match the collection
+                    _activeTreeId.value?.let { id ->
+                        repository.updateTree(GenealogyTree(id = id, name = treeName, description = treeDesc ?: ""))
+                    }
                 }
 
                 processImportJson(jsonString, mode)
@@ -640,7 +646,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
         _statusMessage.value = null
     }
 
-    fun exportToPdf(contentResolver: ContentResolver, uri: Uri) {
+    fun exportToPdf(contentResolver: ContentResolver, uri: Uri, founderId: Long? = null) {
         viewModelScope.launch {
             try {
                 val currentTreeId = _activeTreeId.value
@@ -695,8 +701,17 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                         Log.e("PDF", "Failed to load decorative tree", e)
                     }
                     
-                    // Find Founder (first person of first generation)
-                    val founder = generations.firstOrNull()?.firstOrNull()
+                    // Find Founder - Either manually selected or intelligent default
+                    val firstGen = generations.firstOrNull() ?: emptyList()
+                    val founder = if (founderId != null) {
+                        people.find { it.id == founderId }
+                    } else {
+                        firstGen.find { !it.photoUri.isNullOrEmpty() } 
+                            ?: firstGen.minByOrNull { it.birthYear ?: Int.MAX_VALUE }
+                            ?: firstGen.find { it.gender == "MALE" }
+                            ?: firstGen.firstOrNull()
+                    }
+
                     if (founder != null) {
                         val yPhotoStart = 460f
                         
