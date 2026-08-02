@@ -1,0 +1,56 @@
+напиши скрипт для Powershell на питоне для прпорционального изменения изображения icon_1024.jpg размером 1024х1024 в 512х512 пикселей icon_512.jpg
+Александр, вот ровно то, что тебе нужно: простой и надёжный PowerShell‑скрипт, который запускает Python, а Python уже делает пропорциональное уменьшение icon_1024.jpg → icon_512.jpg.
+
+Работает на Windows без дополнительных зависимостей, кроме установленного Python и библиотеки Pillow.
+
+✅ Шаг 1 — Python‑скрипт resize_icon.py
+Создай файл resize_icon.py рядом с изображениями:
+
+python
+from PIL import Image
+
+# исходный файл
+src = "icon_1024.jpg"
+# целевой файл
+dst = "icon_512.jpg"
+
+# открыть изображение
+img = Image.open(src)
+
+# уменьшить пропорционально до 512x512
+img_resized = img.resize((512, 512), Image.LANCZOS)
+
+# сохранить
+img_resized.save(dst, "JPEG")
+
+print("Готово: icon_512.jpg создан.")
+✅ Шаг 2 — PowerShell‑скрипт run_resize.ps1
+Этот PowerShell‑скрипт запускает Python и делает всё автоматически:
+
+powershell
+# путь к Python
+$python = "python"
+
+# путь к скрипту
+$script = ".\resize_icon.py"
+
+# запуск
+& $python $script
+🔧 Как использовать
+Установи Pillow (если ещё нет):
+
+powershell
+pip install pillow
+Положи в одну папку:
+
+icon_1024.jpg
+
+resize_icon.py
+
+run_resize.ps1
+
+Запусти:
+
+powershell
+.\run_resize.ps1
+В папке появится icon_512.jpg.

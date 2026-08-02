@@ -2572,7 +2572,7 @@ fun ContributionGuideDialog(onDismiss: () -> Unit) {
                 GuideStep(
                     number = "3",
                     title = "Заявка на публикацию",
-                    description = "Отправьте ваш JSON-файл и краткое описание коллекции на почту: densappstudio@yandex.ru"
+                    description = "Отправьте ваш JSON-файл и краткое описание коллекции на почту: avg.login@yandex.ru"
                 )
 
                 Text(
@@ -3197,12 +3197,12 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
                     color = Color.LightGray
                 )
                 Text(
-                    text = "densappstudio@yandex.ru",
+                    text = "avg.login@yandex.ru",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF5BA9E0), // Blue link color
                     modifier = Modifier.clickable {
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:densappstudio@yandex.ru")
+                            data = Uri.parse("mailto:avg.login@yandex.ru")
                             putExtra(Intent.EXTRA_SUBJECT, "Genealogy Tree DB Feedback")
                         }
                         try {
