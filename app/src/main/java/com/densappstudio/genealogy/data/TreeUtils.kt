@@ -16,17 +16,14 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
         }
     }
 
-    // Pass 1: Initial level by parent chain
     fun getLevel(id: Long, visited: Set<Long>): Int {
         if (id in personToLevel) return personToLevel[id]!!
-        if (id in visited) return 0 // Cycle protection
-        
+        if (id in visited) return 0
         val parents = personToParents[id] ?: emptyList()
         if (parents.isEmpty()) {
             personToLevel[id] = 0
             return 0
         }
-        
         val maxParentLevel = parents.maxOf { getLevel(it, visited + id) }
         val level = maxParentLevel + 1
         personToLevel[id] = level
@@ -35,8 +32,7 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
 
     people.forEach { getLevel(it.id, emptySet()) }
 
-    // Pass 2: Align Spouses
-    repeat(2) { // Couple of passes to stabilize
+    repeat(2) {
         people.forEach { person ->
             val spouseId = personToSpouse[person.id]
             if (spouseId != null) {
@@ -47,8 +43,6 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
                 personToLevel[spouseId] = targetLevel
             }
         }
-        
-        // Push children down if their parent moved
         people.forEach { person ->
             val parents = personToParents[person.id] ?: emptyList()
             if (parents.isNotEmpty()) {
@@ -60,7 +54,6 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
         }
     }
 
-    // Group into generations
     val maxLevel = personToLevel.values.maxOrNull() ?: 0
     val generations = List(maxLevel + 1) { mutableListOf<Person>() }
     people.forEach { person ->
@@ -68,22 +61,17 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
         generations[level].add(person)
     }
 
-    // Sort people within each generation to keep spouses adjacent
     val sortedGenerations = generations.map { levelPeople ->
         val sorted = mutableListOf<Person>()
         val visited = mutableSetOf<Long>()
-        
         levelPeople.forEach { person ->
             if (person.id !in visited) {
                 sorted.add(person)
                 visited.add(person.id)
-                
-                // Find and place spouse immediately after
                 val spouseId = personToSpouse[person.id]
                 if (spouseId != null && spouseId !in visited) {
-                    val spouse = levelPeople.find { it.id == spouseId }
-                    if (spouse != null) {
-                        sorted.add(spouse)
+                    levelPeople.find { it.id == spouseId }?.let {
+                        sorted.add(it)
                         visited.add(spouseId)
                     }
                 }
@@ -91,21 +79,15 @@ fun calculateGenerations(people: List<Person>, relationships: List<Relationship>
         }
         sorted
     }
-
     return sortedGenerations.filter { it.isNotEmpty() }
 }
 
-/**
- * Shared logic for calculating node positions in a grid-like layout.
- */
 class TreeLayout(
     val generations: List<List<Person>>,
     val nodeWidth: Float,
     val nodeHeight: Float,
     val horizontalGap: Float,
-    val verticalGap: Float,
-    val centerX: Float = 0f,
-    val topPadding: Float = 0f
+    val verticalGap: Float
 ) {
     private val positions = mutableMapOf<Long, Offset>()
     val totalWidth: Float
@@ -122,8 +104,7 @@ class TreeLayout(
 
         generations.forEachIndexed { genIndex, layer ->
             val layerWidth = layer.size * nodeWidth + (layer.size - 1) * horizontalGap
-            val startX = (totalWidth - layerWidth) / 2 // Center within total width
-            
+            val startX = (totalWidth - layerWidth) / 2
             layer.forEachIndexed { personIndex, person ->
                 val x = startX + personIndex * (nodeWidth + horizontalGap)
                 val y = genIndex * (nodeHeight + verticalGap)
@@ -132,7 +113,5 @@ class TreeLayout(
         }
     }
 
-    fun getPosition(personId: Long): Offset? {
-        return positions[personId]
-    }
+    fun getPosition(personId: Long): Offset? = positions[personId]
 }

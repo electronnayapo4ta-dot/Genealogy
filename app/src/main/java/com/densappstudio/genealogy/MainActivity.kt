@@ -707,12 +707,11 @@ fun VisualTreeView(
                         .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
                         .size(140.dp * scale, 60.dp * scale)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White) // Фиксированный светлый фон для карточки (архивный стиль)
-                        .border(1.dp, Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .background(Color.White)
                         .clickable { onPersonClick(person.id) },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Траурный уголок для усопших
+                    // 1. Траурный уголок (рисуем первым)
                     if (person.isDeceased) {
                         Canvas(modifier = Modifier.matchParentSize()) {
                             val path = Path().apply {
@@ -725,17 +724,24 @@ fun VisualTreeView(
                         }
                     }
 
+                    // 2. Белая рамка ПОВЕРХ всего (чтобы подчеркнуть уголок)
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .border(1.5.dp * scale, Color.White, RoundedCornerShape(8.dp))
+                    )
+
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = person.lastName,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
-                            color = Color.Black, // Всегда черный шрифт на светлом фоне
+                            color = Color.Black,
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = person.firstName,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
-                            color = Color(0xFF333333), // Темно-серый для имени
+                            color = Color(0xFF333333),
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -758,15 +764,15 @@ fun PersonGridItem(
     
     // Distinct styles for deceased (mourning frame)
     val cardBorder = if (person.isDeceased) {
-        BorderStroke(2.dp, Color.Black)
+        BorderStroke(2.dp, Color.White) // White border to highlight the black corner
     } else {
         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     }
     
     val cardColors = if (person.isDeceased) {
         CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E),
-            contentColor = Color.White
+            containerColor = Color.White, // Archive style: always light
+            contentColor = Color.Black
         )
     } else {
         CardDefaults.cardColors(
@@ -785,13 +791,27 @@ fun PersonGridItem(
         border = cardBorder,
         colors = cardColors
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Mourning corner on the card itself
+            if (person.isDeceased) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val path = Path().apply {
+                        moveTo(size.width, 0f)
+                        lineTo(size.width, size.height * 0.15f)
+                        lineTo(size.width * 0.75f, 0f)
+                        close()
+                    }
+                    drawPath(path, Color.Black)
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
             // Photo & Mourning Ribbon container
             Box(
                 modifier = Modifier
@@ -882,6 +902,7 @@ fun PersonGridItem(
             )
         }
     }
+}
 }
 
 
