@@ -707,8 +707,8 @@ fun VisualTreeView(
                         .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
                         .size(140.dp * scale, 60.dp * scale)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .background(Color.White) // Фиксированный светлый фон для карточки (архивный стиль)
+                        .border(1.dp, Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                         .clickable { onPersonClick(person.id) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -717,8 +717,8 @@ fun VisualTreeView(
                         Canvas(modifier = Modifier.matchParentSize()) {
                             val path = Path().apply {
                                 moveTo(size.width, 0f)
-                                lineTo(size.width, size.height * 0.3f)
-                                lineTo(size.width * 0.7f, 0f)
+                                lineTo(size.width, size.height * 0.35f)
+                                lineTo(size.width * 0.65f, 0f)
                                 close()
                             }
                             drawPath(path, Color.Black)
@@ -729,13 +729,13 @@ fun VisualTreeView(
                         Text(
                             text = person.lastName,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
-                            color = Color.Black,
+                            color = Color.Black, // Всегда черный шрифт на светлом фоне
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = person.firstName,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
-                            color = Color.DarkGray,
+                            color = Color(0xFF333333), // Темно-серый для имени
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                     }
