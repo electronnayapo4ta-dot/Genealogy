@@ -807,15 +807,41 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                             people.forEach { person ->
                                 val pos = treeLayout.getPosition(person.id) ?: return@forEach
                                 val rect = RectF(pos.x, pos.y, pos.x + nodeW, pos.y + nodeH)
-                                val bPaint = Paint().apply { color = if (person.isDeceased) android.graphics.Color.rgb(40, 40, 40) else android.graphics.Color.rgb(240, 245, 255) }
+                                
+                                // Light Background for all
+                                val bPaint = Paint().apply { color = android.graphics.Color.WHITE }
                                 canvas.drawRoundRect(rect, 5f, 5f, bPaint)
-                                val sPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = 1f; color = android.graphics.Color.BLACK }
+                                
+                                // Frame
+                                val sPaint = Paint().apply { 
+                                    style = Paint.Style.STROKE
+                                    strokeWidth = 1f
+                                    color = android.graphics.Color.LTGRAY 
+                                }
                                 canvas.drawRoundRect(rect, 5f, 5f, sPaint)
                                 
-                                val tPaint = TextPaint().apply { color = if (person.isDeceased) android.graphics.Color.WHITE else android.graphics.Color.BLACK; textSize = 8f; textAlign = Paint.Align.CENTER }
+                                // Mourning corner for deceased
+                                if (person.isDeceased) {
+                                    val mPaint = Paint().apply { color = android.graphics.Color.BLACK }
+                                    val path = android.graphics.Path().apply {
+                                        moveTo(rect.right, rect.top)
+                                        lineTo(rect.right, rect.top + (nodeH * 0.3f))
+                                        lineTo(rect.right - (nodeW * 0.2f), rect.top)
+                                        close()
+                                    }
+                                    canvas.drawPath(path, mPaint)
+                                }
+                                
+                                val tPaint = TextPaint().apply { 
+                                    color = android.graphics.Color.BLACK
+                                    textSize = 8f
+                                    textAlign = Paint.Align.CENTER 
+                                }
                                 val name = "${person.lastName} ${person.firstName.take(1)}.${person.patronymic?.take(1)?.let { "$it." } ?: ""}"
                                 canvas.drawText(name, pos.x + nodeW / 2, pos.y + 25f, tPaint)
+                                
                                 val dates = if (person.isDeceased) "${person.birthYear ?: "?"}-${person.deathYear ?: "†"}" else "р.${person.birthYear ?: "?"}"
+                                tPaint.color = android.graphics.Color.DKGRAY
                                 canvas.drawText(dates, pos.x + nodeW / 2, pos.y + 45f, tPaint)
                             }
                             

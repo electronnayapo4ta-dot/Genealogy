@@ -707,22 +707,35 @@ fun VisualTreeView(
                         .offset { IntOffset(pixelX.toInt(), pixelY.toInt()) }
                         .size(140.dp * scale, 60.dp * scale)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (person.isDeceased) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.primaryContainer)
-                        .border(1.dp, if (person.isDeceased) Color.Black else MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                         .clickable { onPersonClick(person.id) },
                     contentAlignment = Alignment.Center
                 ) {
+                    // Траурный уголок для усопших
+                    if (person.isDeceased) {
+                        Canvas(modifier = Modifier.matchParentSize()) {
+                            val path = Path().apply {
+                                moveTo(size.width, 0f)
+                                lineTo(size.width, size.height * 0.3f)
+                                lineTo(size.width * 0.7f, 0f)
+                                close()
+                            }
+                            drawPath(path, Color.Black)
+                        }
+                    }
+
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = person.lastName,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontSize = (10 * scale).sp),
-                            color = if (person.isDeceased) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = Color.Black,
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = person.firstName,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = (9 * scale).sp),
-                            color = if (person.isDeceased) Color.LightGray else MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = Color.DarkGray,
                             maxLines = 1, overflow = TextOverflow.Ellipsis
                         )
                     }
