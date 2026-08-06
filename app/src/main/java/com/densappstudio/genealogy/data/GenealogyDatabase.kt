@@ -20,7 +20,7 @@ abstract class GenealogyDatabase : RoomDatabase() {
                     GenealogyDatabase::class.java,
                     "genealogy_database"
                 )
-                // Removed fallbackToDestructiveMigration for production safety
+                .fallbackToDestructiveMigration(true) // Allowed once for transition to v3 (Foreign Keys)
                 .build()
                 INSTANCE = instance
                 instance
