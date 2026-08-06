@@ -19,11 +19,18 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["personId2"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = GenealogyTree::class,
+            parentColumns = ["id"],
+            childColumns = ["treeId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
         Index(value = ["personId1"]),
-        Index(value = ["personId2"])
+        Index(value = ["personId2"]),
+        Index(value = ["treeId"])
     ]
 )
 data class Relationship(

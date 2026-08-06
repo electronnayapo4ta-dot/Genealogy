@@ -10,6 +10,7 @@ class GenealogyRepository(private val dao: GenealogyDao) {
     fun getPeopleForTree(treeId: Long): Flow<List<Person>> = dao.getPeopleForTree(treeId)
     suspend fun getPeopleForTreeSuspend(treeId: Long): List<Person> = dao.getPeopleForTreeSuspend(treeId)
     fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>> = dao.getRelationshipsForTree(treeId)
+    suspend fun getRelationshipsForTreeSuspend(treeId: Long): List<Relationship> = dao.getRelationshipsForTreeSuspend(treeId)
 
     suspend fun insertTree(tree: GenealogyTree): Long = dao.insertTree(tree)
     suspend fun updateTree(tree: GenealogyTree) = dao.updateTree(tree)

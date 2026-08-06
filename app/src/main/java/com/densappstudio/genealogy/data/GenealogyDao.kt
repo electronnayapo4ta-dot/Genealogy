@@ -56,6 +56,9 @@ interface GenealogyDao {
     @Query("SELECT * FROM relationships WHERE treeId = :treeId")
     fun getRelationshipsForTree(treeId: Long): Flow<List<Relationship>>
 
+    @Query("SELECT * FROM relationships WHERE treeId = :treeId")
+    suspend fun getRelationshipsForTreeSuspend(treeId: Long): List<Relationship>
+
     @Query("SELECT * FROM relationships")
     fun getAllRelationships(): Flow<List<Relationship>>
 

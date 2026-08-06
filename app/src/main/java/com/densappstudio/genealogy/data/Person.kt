@@ -1,9 +1,22 @@
 package com.densappstudio.genealogy.data
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "people")
+@Entity(
+    tableName = "people",
+    foreignKeys = [
+        ForeignKey(
+            entity = GenealogyTree::class,
+            parentColumns = ["id"],
+            childColumns = ["treeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["treeId"])]
+)
 data class Person(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val treeId: Long = 1, // Reference to GenealogyTree

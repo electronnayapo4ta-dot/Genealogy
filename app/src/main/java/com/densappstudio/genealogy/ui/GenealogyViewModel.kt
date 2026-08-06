@@ -22,14 +22,13 @@ import java.io.OutputStreamWriter
 import java.util.Calendar
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import android.text.StaticLayout
 import android.text.TextPaint
-import android.text.Layout
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.RectF
-import androidx.compose.ui.geometry.Offset
 import com.densappstudio.genealogy.R
+import androidx.compose.ui.geometry.Offset
+import androidx.room.withTransaction
 
 enum class LivingFilter { ALL, LIVING, DECEASED }
 enum class RelationFilter {
@@ -135,9 +134,14 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         viewModelScope.launch {
-            // Auto-select first tree if available
-            repository.allTrees.first().firstOrNull()?.let {
-                _activeTreeId.value = it.id
+            // Restore active tree ID or auto-select first
+            val persistedId = prefs.getLong("active_tree_id", -1L)
+            if (persistedId != -1L) {
+                _activeTreeId.value = persistedId
+            } else {
+                repository.allTrees.first().firstOrNull()?.let {
+                    _activeTreeId.value = it.id
+                }
             }
             // Fetch remote library index from GitHub
             fetchPublicCollections()
@@ -342,6 +346,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     // CRUD Methods
     fun setActiveTree(id: Long) {
         _activeTreeId.value = id
+        prefs.edit().putLong("active_tree_id", id).apply()
         selectPerson(null)
     }
 
@@ -355,12 +360,24 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun deleteTree(tree: GenealogyTree) {
         viewModelScope.launch {
-            repository.deleteTree(tree)
-            val remaining = repository.allTrees.first()
-            if (remaining.isNotEmpty()) {
-                setActiveTree(remaining.first().id)
-            } else {
-                _activeTreeId.value = null
+            try {
+                database.withTransaction {
+                    // Cascade delete via FK handles people and relationships in version 3
+                    // But manual clear is safer if migration is pending
+                    repository.clearRelationshipsForTree(tree.id)
+                    repository.clearPeopleForTree(tree.id)
+                    repository.deleteTree(tree)
+                }
+                val remaining = repository.allTrees.first()
+                if (remaining.isNotEmpty()) {
+                    setActiveTree(remaining.first().id)
+                } else {
+                    _activeTreeId.value = null
+                    prefs.edit().remove("active_tree_id").apply()
+                }
+            } catch (e: Exception) {
+                Log.e("DeleteTree", "Failed to delete tree", e)
+                _statusMessage.value = "Ошибка при удалении: ${e.localizedMessage}"
             }
         }
     }
@@ -480,7 +497,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
 
                 // Fetch fresh data from DB to ensure completeness
                 val peopleEntities = repository.getPeopleForTreeSuspend(currentTreeId)
-                val relationshipEntities = repository.allRelationships.first().filter { it.treeId == currentTreeId }
+                val relationshipEntities = repository.getRelationshipsForTreeSuspend(currentTreeId)
 
                 // Normalize IDs to 1..N for a "clean" export file
                 val idMap = mutableMapOf<Long, Long>()
@@ -562,58 +579,69 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        // Use _activeTreeId directly to avoid race conditions with the combined activeTree state
-        var treeId = _activeTreeId.value
+        val treeId = _activeTreeId.value ?: return
 
-        if (treeId == null) {
-            treeId = repository.insertTree(GenealogyTree(name = "Импортированная база"))
-            _activeTreeId.value = treeId
-        }
+        try {
+            database.withTransaction {
+                val oldToNewIdMap = mutableMapOf<Long, Long>()
 
-        // Remap IDs to avoid collisions between different trees/imports
-        val oldToNewIdMap = mutableMapOf<Long, Long>()
+                if (mode == ImportMode.REPLACE) {
+                    repository.clearRelationshipsForTree(treeId)
+                    repository.clearPeopleForTree(treeId)
+                }
 
-        // 1. Clear tree if REPLACE mode
-        if (mode == ImportMode.REPLACE) {
-            repository.clearPeopleForTree(treeId)
-            repository.clearRelationshipsForTree(treeId)
-        }
+                val existingPeople = repository.getPeopleForTreeSuspend(treeId)
+                
+                data.people.forEach { personData ->
+                    val personEntity = personData.toEntity().copy(treeId = treeId)
+                    
+                    // Deduplication by name and birth year
+                    val match = if (mode == ImportMode.REPLACE) null else existingPeople.find { 
+                        it.firstName.equals(personEntity.firstName, true) && 
+                        it.lastName.equals(personEntity.lastName, true) &&
+                        it.birthYear == personEntity.birthYear
+                    }
 
-        // 2. Insert people and build ID mapping
-        data.people.forEach { personData ->
-            val personEntity = personData.toEntity().copy(id = 0, treeId = treeId)
-            
-            // If MERGE mode, we could potentially check for duplicates by name/birth, 
-            // but for now, let's just insert everyone as new records to ensure no data is lost
-            // especially since they are in the context of the current tree.
-            
-            val newId = repository.insertPerson(personEntity)
-            oldToNewIdMap[personData.id] = newId
-        }
+                    val finalId = when {
+                        mode == ImportMode.UPDATE && match != null -> {
+                            repository.updatePerson(personEntity.copy(id = match.id))
+                            match.id
+                        }
+                        mode == ImportMode.MERGE && match != null -> {
+                            match.id
+                        }
+                        else -> {
+                            repository.insertPerson(personEntity.copy(id = 0))
+                        }
+                    }
+                    oldToNewIdMap[personData.id] = finalId
+                }
 
-        // 3. Insert relationships using the new ID mapping
-        data.relationships.forEach { relData ->
-            val newPersonId1 = oldToNewIdMap[relData.personId1]
-            val newPersonId2 = oldToNewIdMap[relData.personId2]
+                data.relationships.forEach { relData ->
+                    val newP1 = oldToNewIdMap[relData.personId1]
+                    val newP2 = oldToNewIdMap[relData.personId2]
 
-            if (newPersonId1 != null && newPersonId2 != null) {
-                repository.insertRelationship(Relationship(
-                    id = 0,
-                    treeId = treeId,
-                    personId1 = newPersonId1,
-                    personId2 = newPersonId2,
-                    type = relData.type
-                ))
+                    if (newP1 != null && newP2 != null) {
+                        repository.insertRelationship(Relationship(
+                            id = 0,
+                            treeId = treeId,
+                            personId1 = newP1,
+                            personId2 = newP2,
+                            type = relData.type
+                        ))
+                    }
+                }
             }
-        }
 
-        val totalCount = repository.getPeopleForTreeSuspend(treeId).size
-        val addedCount = data.people.size
-
-        _statusMessage.value = when (mode) {
-            ImportMode.REPLACE -> "База полностью заменена. Загружено: $addedCount чел."
-            ImportMode.MERGE -> "Объединение завершено. Добавлено: $addedCount чел. Всего в базе: $totalCount чел."
-            ImportMode.UPDATE -> "Обновление завершено. Добавлено/обновлено: $addedCount чел. Всего в базе: $totalCount чел."
+            val totalCount = repository.getPeopleForTreeSuspend(treeId).size
+            _statusMessage.value = when (mode) {
+                ImportMode.REPLACE -> "База заменена: $totalCount чел."
+                ImportMode.MERGE -> "Объединение завершено. Всего: $totalCount чел."
+                ImportMode.UPDATE -> "Обновление завершено. Всего: $totalCount чел."
+            }
+        } catch (e: Exception) {
+            Log.e("Import", "Atomic import failed", e)
+            _statusMessage.value = "Ошибка при импорте: ${e.localizedMessage}"
         }
     }
 
@@ -661,7 +689,7 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                 val relationships = repository.allRelationships.first().filter { it.treeId == currentTreeId }
                 
                 if (people.isEmpty()) {
-                    _statusMessage.value = "Ошибка: в выбранной базе нет людей для отчета."
+                    _statusMessage.value = "Ошибка: в базе нет данных для отчета."
                     return@launch
                 }
 
@@ -671,7 +699,6 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     val pageW = 595
                     val pageH = 842
                     val pageInfo = PdfDocument.PageInfo.Builder(pageW, pageH, 1).create()
-                    
                     val generations = calculateGenerations(people, relationships)
 
                     // --- СТРАНИЦА 1: ОБЛОЖКА ---
@@ -835,21 +862,21 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     // --- СЕКЦИЯ 3: ДЕТАЛЬНЫЙ СПИСОК ---
                     page = pdfDocument.startPage(pageInfo)
                     canvas = page.canvas
-                    var yList = 60f
+                    var yL = 60f
                     textPaint.textAlign = Paint.Align.LEFT
 
                     generations.forEachIndexed { idx, generation ->
-                        if (yList > 750f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yList = 60f }
-                        textPaint.isFakeBoldText = true; textPaint.textSize = 16f; textPaint.color = android.graphics.Color.rgb(0, 102, 204); canvas.drawText("Поколение ${idx + 1}", 50f, yList, textPaint); yList += 25f
+                        if (yL > 750f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yL = 60f }
+                        textPaint.isFakeBoldText = true; textPaint.textSize = 16f; textPaint.color = android.graphics.Color.rgb(0, 102, 204); canvas.drawText("Поколение ${idx + 1}", 50f, yL, textPaint); yL += 25f
                         generation.forEach { p ->
-                            if (yList > 780f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yList = 60f }
-                            textPaint.isFakeBoldText = true; textPaint.textSize = 12f; textPaint.color = android.graphics.Color.BLACK; val name = "${p.lastName} ${p.firstName} ${p.patronymic}".trim(); canvas.drawText("• $name", 60f, yList, textPaint)
-                            val dt = if (p.isDeceased) " [${p.birthYear ?: "?"} — ${p.deathYear ?: "†"}]" else " [р. ${p.birthYear ?: "?"}]"
-                            textPaint.isFakeBoldText = false; val nw = textPaint.measureText("• $name"); canvas.drawText(dt, 60f + nw + 5f, yList, textPaint); yList += 18f
-                            if (!p.biography.isNullOrBlank()) { textPaint.textSize = 9f; textPaint.color = android.graphics.Color.DKGRAY; val cleanBio = p.biography!!.replace("\n", " ").trim(); val bioText = if (cleanBio.length > 100) cleanBio.take(97) + "..." else cleanBio; canvas.drawText("  $bioText", 75f, yList, textPaint); yList += 15f }
-                            yList += 8f
+                            if (yL > 780f) { pdfDocument.finishPage(page); page = pdfDocument.startPage(pageInfo); canvas = page.canvas; yL = 60f }
+                            textPaint.isFakeBoldText = true; textPaint.textSize = 12f; textPaint.color = android.graphics.Color.BLACK; val name = "${p.lastName} ${p.firstName} ${p.patronymic}".trim(); canvas.drawText("• $name", 60f, yL, textPaint)
+                            val dates = if (p.isDeceased) " [${p.birthYear ?: "?"} — ${p.deathYear ?: "†"}]" else " [р. ${p.birthYear ?: "?"}]"
+                            textPaint.isFakeBoldText = false; val nw = textPaint.measureText("• $name"); canvas.drawText(dates, 60f + nw + 5f, yL, textPaint); yL += 18f
+                            if (!p.biography.isNullOrBlank()) { textPaint.textSize = 9f; textPaint.color = android.graphics.Color.DKGRAY; val cb = p.biography!!.replace("\n", " ").trim(); val bt = if (cb.length > 100) cb.take(97) + "..." else cb; canvas.drawText("  $bt", 75f, yL, textPaint); yL += 15f }
+                            yL += 8f
                         }
-                        yList += 12f
+                        yL += 12f
                     }
                     pdfDocument.finishPage(page)
                     

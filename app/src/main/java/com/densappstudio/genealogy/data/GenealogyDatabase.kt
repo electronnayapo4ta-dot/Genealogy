@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Person::class, Relationship::class, GenealogyTree::class], version = 2, exportSchema = false)
+@Database(entities = [Person::class, Relationship::class, GenealogyTree::class], version = 3, exportSchema = true)
 abstract class GenealogyDatabase : RoomDatabase() {
     abstract fun genealogyDao(): GenealogyDao
 
@@ -20,7 +20,7 @@ abstract class GenealogyDatabase : RoomDatabase() {
                     GenealogyDatabase::class.java,
                     "genealogy_database"
                 )
-                .fallbackToDestructiveMigration(true)
+                // Removed fallbackToDestructiveMigration for production safety
                 .build()
                 INSTANCE = instance
                 instance
