@@ -3211,13 +3211,13 @@ fun BackupTabScreen(viewModel: GenealogyViewModel) {
             )
 
             Text(
-                text = "Версия 1.0.0",
+                text = "Версия 1.1",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.LightGray
             )
 
             Text(
-                text = "Релиз: 28 июля 2026",
+                text = "Релиз: 6 августа 2026",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.LightGray
             )
