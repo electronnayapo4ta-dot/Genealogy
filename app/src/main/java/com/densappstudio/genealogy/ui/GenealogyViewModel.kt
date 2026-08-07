@@ -579,21 +579,27 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        val treeId = _activeTreeId.value ?: return
+        var treeId = _activeTreeId.value
+        if (treeId == null) {
+            // Auto-create tree if none active
+            treeId = repository.insertTree(GenealogyTree(name = "Импортированная база"))
+            _activeTreeId.value = treeId
+            saveActiveTree(treeId)
+        }
 
         try {
             database.withTransaction {
                 val oldToNewIdMap = mutableMapOf<Long, Long>()
 
                 if (mode == ImportMode.REPLACE) {
-                    repository.clearRelationshipsForTree(treeId)
-                    repository.clearPeopleForTree(treeId)
+                    repository.clearRelationshipsForTree(treeId!!)
+                    repository.clearPeopleForTree(treeId!!)
                 }
 
-                val existingPeople = repository.getPeopleForTreeSuspend(treeId)
+                val existingPeople = repository.getPeopleForTreeSuspend(treeId!!)
                 
                 data.people.forEach { personData ->
-                    val personEntity = personData.toEntity().copy(treeId = treeId)
+                    val personEntity = personData.toEntity().copy(treeId = treeId!!)
                     
                     // Deduplication by name and birth year
                     val match = if (mode == ImportMode.REPLACE) null else existingPeople.find { 
@@ -617,23 +623,34 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
                     oldToNewIdMap[personData.id] = finalId
                 }
 
+                // Fetch existing relationships to avoid duplicates in MERGE/UPDATE
+                val existingRels = if (mode == ImportMode.REPLACE) emptyList() 
+                                   else repository.getRelationshipsForTreeSuspend(treeId!!)
+
                 data.relationships.forEach { relData ->
                     val newP1 = oldToNewIdMap[relData.personId1]
                     val newP2 = oldToNewIdMap[relData.personId2]
 
                     if (newP1 != null && newP2 != null) {
-                        repository.insertRelationship(Relationship(
-                            id = 0,
-                            treeId = treeId,
-                            personId1 = newP1,
-                            personId2 = newP2,
-                            type = relData.type
-                        ))
+                        // Deduplication for relationships
+                        val isDuplicate = existingRels.any { 
+                            it.personId1 == newP1 && it.personId2 == newP2 && it.type == relData.type
+                        }
+                        
+                        if (!isDuplicate) {
+                            repository.insertRelationship(Relationship(
+                                id = 0,
+                                treeId = treeId!!,
+                                personId1 = newP1,
+                                personId2 = newP2,
+                                type = relData.type
+                            ))
+                        }
                     }
                 }
             }
 
-            val totalCount = repository.getPeopleForTreeSuspend(treeId).size
+            val totalCount = repository.getPeopleForTreeSuspend(treeId!!).size
             _statusMessage.value = when (mode) {
                 ImportMode.REPLACE -> "База заменена: $totalCount чел."
                 ImportMode.MERGE -> "Объединение завершено. Всего: $totalCount чел."
@@ -894,6 +911,10 @@ class GenealogyViewModel(application: Application) : AndroidViewModel(applicatio
     fun updateTheme(theme: AppTheme) {
         _appTheme.value = theme
         prefs.edit().putString("app_theme", theme.name).apply()
+    }
+
+    private fun saveActiveTree(treeId: Long?) {
+        prefs.edit().putLong("active_tree_id", treeId ?: -1L).apply()
     }
 }
 

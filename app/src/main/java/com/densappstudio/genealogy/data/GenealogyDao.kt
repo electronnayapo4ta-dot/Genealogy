@@ -88,30 +88,4 @@ interface GenealogyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRelationships(relationships: List<Relationship>)
-
-    @Transaction
-    suspend fun replaceTreeData(treeId: Long, people: List<Person>, relationships: List<Relationship>) {
-        clearRelationshipsForTree(treeId)
-        clearPeopleForTree(treeId)
-        insertPeople(people.map { it.copy(treeId = treeId) })
-        insertRelationships(relationships.map { it.copy(treeId = treeId) })
-    }
-
-    @Transaction
-    suspend fun mergeDatabase(people: List<Person>, relationships: List<Relationship>, updateOnConflict: Boolean) {
-        if (updateOnConflict) {
-            insertPeople(people)
-            insertRelationships(relationships)
-        } else {
-            // Only insert if doesn't exist
-            for (p in people) {
-                if (getPersonByIdSuspend(p.id) == null) {
-                    insertPerson(p)
-                }
-            }
-            // For relationships, let's insert if there is no conflict or simply insert all
-            // we can safely insertAll since relationships don't usually clash except by ID
-            insertRelationships(relationships)
-        }
-    }
 }

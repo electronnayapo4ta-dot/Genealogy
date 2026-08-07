@@ -41,10 +41,4 @@ class GenealogyRepository(private val dao: GenealogyDao) {
 
     suspend fun clearPeopleForTree(treeId: Long) = dao.clearPeopleForTree(treeId)
     suspend fun clearRelationshipsForTree(treeId: Long) = dao.clearRelationshipsForTree(treeId)
-
-    suspend fun replaceTreeData(treeId: Long, people: List<Person>, relationships: List<Relationship>) =
-        dao.replaceTreeData(treeId, people, relationships)
-
-    suspend fun mergeDatabase(people: List<Person>, relationships: List<Relationship>, updateOnConflict: Boolean) =
-        dao.mergeDatabase(people, relationships, updateOnConflict)
 }
